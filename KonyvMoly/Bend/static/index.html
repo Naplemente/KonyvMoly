@@ -2,43 +2,109 @@
 <html lang="hu">
 <head>
   <meta charset="UTF-8">
-  <title>KönyvMoly Könyvkölcsönző</title>
-</head>
-<style>
-  .elerheto {
-    color: green;
-    font-weight: bold;
-  }
+  <title>Admin – Könyvkezelő</title>
 
-  .kolcsonozve {
-    color: red;
-    font-weight: bold;
-  }
-</style>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background-color: #f4f6f8;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    .card {
+      background: white;
+      padding: 20px;
+      margin-bottom: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+
+    button {
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+
+    .elerheto {
+      color: green;
+      font-weight: bold;
+    }
+
+    .kolcsonozve {
+      color: red;
+      font-weight: bold;
+    }
+
+    .danger {
+      background: #e74c3c;
+      color: white;
+      border: none;
+    }
+
+    .primary {
+      background: #3498db;
+      color: white;
+      border: none;
+    }
+
+  </style>
+</head>
+
 <body>
 
-  <header>
-    <h1>Könyvtári könyvkölcsönző rendszer</h1>
-  </header>
+<h1>📚 Admin – Könyvkezelő rendszer</h1>
 
-  <nav>
-    <ul>
-      <li><a href="#">Kategóriák</a></li>
-      <li><a href="#">Profilom</a></li>
-      <li><a href="#">Kosár</a></li>
-    </ul>
-  </nav>
+<div class="card">
+  <h2>Új könyv hozzáadása</h2>
+  <form id="konyv-form">
+    <input type="text" id="title" placeholder="Cím" required>
+    <input type="text" id="author" placeholder="Szerző" required>
+    <input type="number" id="year" placeholder="Év" required>
 
-  <main>
-      <h2>Könyvek listája</h2>
-  <div id="konyv-lista">
-    Betöltés...
-  </div>
-  </main>
+    <button class="primary" type="submit">Hozzáadás</button>
+  </form>
+</div>
 
-  <footer>
-    <p>© 2026 KönyvMoly</p>
-  </footer>
+<div class="card">
+  <h2>Könyvek listája</h2>
+
+    <input
+  type="text"
+  id="kereso"
+  placeholder="Keresés cím vagy szerző alapján..."
+  style="margin-bottom:15px; width:100%; padding:8px;"
+>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Cím</th>
+        <th>Szerző</th>
+        <th>Státusz</th>
+        <th>Műveletek</th>
+      </tr>
+    </thead>
+    <tbody id="konyv-lista">
+    </tbody>
+  </table>
+
+</div>
+
+<script src="js/main.js"></script>
 
 </body>
 </html>
