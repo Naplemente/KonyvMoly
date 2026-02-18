@@ -7,7 +7,41 @@ from starlette.middleware.sessions import SessionMiddleware
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import create_engine, text
+from fastapi import Request, Form
+from fastapi.responses import RedirectResponse
+from fastapi.templating import Jinja2Templates
+import os
+from fastapi.templating import Jinja2Templates
+from starlette.middleware.sessions import SessionMiddleware
 app = FastAPI()
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+templates = Jinja2Templates(
+    directory=os.path.join(BASE_DIR, "templates")
+)
+
+
+@app.get("/login")
+def login_get(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
+
+
+@app.post("/login")
+def login_post(request: Request, username: str = Form(...), password: str = Form(...)):
+
+    if username == "admin" and password == "1234":
+        request.session["user"] = username
+        return RedirectResponse("/", status_code=302)
+
+    return templates.TemplateResponse("login.html", {
+        "request": request,
+        "error": True
+    })
+
+templates = Jinja2Templates(directory="templates")
+# ====== TITKOSÍTÁS ======
+app.add_middleware(SessionMiddleware, secret_key="nagyon_titkos_kulcs")
 
 # ====== ADATBÁZIS KAPCSOLAT ======
 engine = create_engine(

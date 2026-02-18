@@ -1,7 +1,7 @@
 @echo off
+cd /d %~dp0
 
 echo Virtual environment ellenorzes...
-
 IF NOT EXIST .venv (
     echo Letrehozom a virtualis kornyezetet...
     python -m venv .venv
