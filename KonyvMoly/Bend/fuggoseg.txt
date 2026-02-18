@@ -1,3 +1,2 @@
-A függőségek telepítéséhez futtasd a parancsot pycharmba ha nem érzékeli automatikusan. 
-
+A függőségek telepítéséhez futtasd a parancsot pycharmba:
 pip install -r requirements.txt
