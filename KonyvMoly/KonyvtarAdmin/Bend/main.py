@@ -9,6 +9,8 @@ import os
 
 app = FastAPI()
 
+# PATRIK HASH KÓDJA: $2b$12$/MeRllpTPYWWhFLoNavdYOTDdE.AGi89cOce6lDMlP6g69Or2UNsq
+
 # ===============================
 # SESSION
 # ===============================
@@ -31,16 +33,10 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 engine = create_engine("mysql+pymysql://root:@localhost/konyvtar")
 
 # ===============================
-# ADMIN JELSZÓ HASH (1234)
-# ===============================
-ADMIN_PASSWORD_HASH = bcrypt.hashpw("1234".encode(), bcrypt.gensalt())
-
-# ===============================
 # SEGÉDFÜGGVÉNY
 # ===============================
 def is_logged_in(request: Request):
     return request.session.get("admin")
-
 
 # ===============================
 # DASHBOARD
@@ -54,7 +50,6 @@ def admin_dashboard(request: Request):
         "index.html",
         {"request": request}
     )
-
 
 # ===============================
 # LOGIN
@@ -73,18 +68,23 @@ def login_post(
     username: str = Form(...),
     password: str = Form(...)
 ):
-    if username == "admin" and bcrypt.checkpw(
-        password.encode(),
-        ADMIN_PASSWORD_HASH
-    ):
-        request.session["admin"] = username
-        return RedirectResponse("/", status_code=303)
+    with engine.connect() as conn:
+        result = conn.execute(
+            text("SELECT * FROM admin_users WHERE username = :username"),
+            {"username": username}
+        ).fetchone()
+
+    if result:
+        stored_hash = result.password.encode()
+
+        if bcrypt.checkpw(password.encode(), stored_hash):
+            request.session["admin"] = username
+            return RedirectResponse("/", status_code=303)
 
     return templates.TemplateResponse(
         "login.html",
         {"request": request, "error": True}
     )
-
 
 # ===============================
 # LOGOUT
@@ -93,7 +93,6 @@ def login_post(
 def logout(request: Request):
     request.session.clear()
     return RedirectResponse("/login", status_code=303)
-
 
 # ===============================
 # STATISZTIKA
@@ -105,15 +104,18 @@ def statisztika(request: Request):
 
     with engine.connect() as conn:
         total = conn.execute(text("SELECT COUNT(*) FROM konyvek")).scalar()
-        available = conn.execute(text("SELECT COUNT(*) FROM konyvek WHERE elerheto = 1")).scalar()
-        borrowed = conn.execute(text("SELECT COUNT(*) FROM konyvek WHERE elerheto = 0")).scalar()
+        available = conn.execute(
+            text("SELECT COUNT(*) FROM konyvek WHERE elerheto = 1")
+        ).scalar()
+        borrowed = conn.execute(
+            text("SELECT COUNT(*) FROM konyvek WHERE elerheto = 0")
+        ).scalar()
 
     return {
         "osszes": total,
         "elerheto": available,
         "kolcsonzott": borrowed
     }
-
 
 # ===============================
 # KÖNYVEK LISTA
@@ -141,7 +143,6 @@ def konyvek_lista(request: Request):
 
     return konyvek
 
-
 # ===============================
 # ÚJ KÖNYV
 # ===============================
@@ -164,7 +165,6 @@ def konyv_hozzaadas(request: Request, konyv: dict):
 
     return {"uzenet": "Könyv hozzáadva"}
 
-
 # ===============================
 # KÖLCSÖNZÉS / VISSZAHOZÁS
 # ===============================
@@ -182,7 +182,6 @@ def konyv_kolcsonzes(request: Request, konyv_id: int):
         conn.commit()
 
     return {"uzenet": "Státusz frissítve"}
-
 
 # ===============================
 # TÖRLÉS
