@@ -32,11 +32,13 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # ===============================
 engine = create_engine("mysql+pymysql://root:@localhost/konyvtar")
 
+
 # ===============================
 # SEGÉDFÜGGVÉNY
 # ===============================
 def is_logged_in(request: Request):
     return request.session.get("admin")
+
 
 # ===============================
 # DASHBOARD
@@ -51,6 +53,7 @@ def admin_dashboard(request: Request):
         {"request": request}
     )
 
+
 # ===============================
 # LOGIN
 # ===============================
@@ -63,28 +66,33 @@ def login_get(request: Request):
 
 
 @app.post("/login")
-def login_post(
-    request: Request,
-    username: str = Form(...),
-    password: str = Form(...)
-):
+def login_post(request: Request,
+               username: str = Form(...),
+               password: str = Form(...)):
     with engine.connect() as conn:
         result = conn.execute(
             text("SELECT * FROM admin_users WHERE username = :username"),
             {"username": username}
         ).fetchone()
 
-    if result:
-        stored_hash = result.password.encode()
-
-        if bcrypt.checkpw(password.encode(), stored_hash):
-            request.session["admin"] = username
-            return RedirectResponse("/", status_code=303)
+    if result and bcrypt.checkpw(password.encode(), result.password.encode()):
+        request.session["admin"] = result.username
+        request.session["role"] = result.role
+        return RedirectResponse("/", status_code=303)
 
     return templates.TemplateResponse(
         "login.html",
         {"request": request, "error": True}
     )
+
+
+def get_current_user(request: Request):
+    return request.session.get("admin")
+
+
+def is_superadmin(request: Request):
+    return request.session.get("role") == "superadmin"
+
 
 # ===============================
 # LOGOUT
@@ -93,6 +101,7 @@ def login_post(
 def logout(request: Request):
     request.session.clear()
     return RedirectResponse("/login", status_code=303)
+
 
 # ===============================
 # STATISZTIKA
@@ -117,6 +126,7 @@ def statisztika(request: Request):
         "kolcsonzott": borrowed
     }
 
+
 # ===============================
 # KÖNYVEK LISTA
 # ===============================
@@ -127,9 +137,9 @@ def konyvek_lista(request: Request):
 
     with engine.connect() as conn:
         result = conn.execute(text("""
-            SELECT id, cim, szerzo, kiadas_eve, elerheto
-            FROM konyvek
-        """))
+                                   SELECT id, cim, szerzo, kiadas_eve, elerheto
+                                   FROM konyvek
+                                   """))
 
         konyvek = []
         for row in result:
@@ -143,6 +153,67 @@ def konyvek_lista(request: Request):
 
     return konyvek
 
+@app.post("/admin-letrehozas")
+def admin_letrehozas(request: Request,
+                     username: str = Form(...),
+                     password: str = Form(...),
+                     role: str = Form(...)):
+
+    if request.session.get("role") != "superadmin":
+        return RedirectResponse("/", status_code=303)
+
+    with engine.connect() as conn:
+        existing = conn.execute(
+            text("SELECT id FROM admin_users WHERE username = :username"),
+            {"username": username}
+        ).fetchone()
+
+        if existing:
+            return templates.TemplateResponse(
+                "adminok.html",
+                {
+                    "request": request,
+                    "adminok": conn.execute(
+                        text("SELECT id, username, role FROM admin_users")
+                    ).fetchall(),
+                    "error": "Ez a felhasználónév már létezik!"
+                }
+            )
+
+        hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+        conn.execute(
+            text("""
+                INSERT INTO admin_users (username, password, role)
+                VALUES (:username, :password, :role)
+            """),
+            {
+                "username": username,
+                "password": hashed,
+                "role": role
+            }
+        )
+        conn.commit()
+
+    return RedirectResponse("/adminok", status_code=303)
+
+@app.get("/adminok")
+def admin_kezel(request: Request):
+    if request.session.get("role") != "superadmin":
+        return RedirectResponse("/", status_code=303)
+
+    with engine.connect() as conn:
+        result = conn.execute(
+            text("SELECT id, username, role FROM admin_users")
+        )
+        adminok = result.fetchall()
+
+    return templates.TemplateResponse(
+        "adminok.html",
+        {"request": request, "adminok": adminok}
+    )
+
+
 # ===============================
 # ÚJ KÖNYV
 # ===============================
@@ -153,17 +224,50 @@ def konyv_hozzaadas(request: Request, konyv: dict):
 
     with engine.connect() as conn:
         conn.execute(text("""
-            INSERT INTO konyvek (cim, szerzo, kiadas_eve, elerheto)
-            VALUES (:cim, :szerzo, :ev, :elerheto)
-        """), {
-            "cim": konyv["title"],
-            "szerzo": konyv["author"],
-            "ev": konyv["year"],
-            "elerheto": konyv["available"]
-        })
+                          INSERT INTO konyvek (cim, szerzo, kiadas_eve, elerheto)
+                          VALUES (:cim, :szerzo, :ev, :elerheto)
+                          """), {
+                         "cim": konyv["title"],
+                         "szerzo": konyv["author"],
+                         "ev": konyv["year"],
+                         "elerheto": konyv["available"]
+                     })
         conn.commit()
 
     return {"uzenet": "Könyv hozzáadva"}
+
+@app.post("/admin-torles/{admin_id}")
+def admin_torles(request: Request, admin_id: int):
+
+    if request.session.get("role") != "superadmin":
+        return RedirectResponse("/", status_code=303)
+
+    current_user = request.session.get("admin")
+
+    with engine.connect() as conn:
+        admin = conn.execute(
+            text("SELECT username, role FROM admin_users WHERE id = :id"),
+            {"id": admin_id}
+        ).fetchone()
+
+        if not admin:
+            return RedirectResponse("/adminok", status_code=303)
+
+
+        if admin.username == current_user:
+            return RedirectResponse("/adminok", status_code=303)
+
+
+        if admin.role == "superadmin":
+            return RedirectResponse("/adminok", status_code=303)
+
+        conn.execute(
+            text("DELETE FROM admin_users WHERE id = :id"),
+            {"id": admin_id}
+        )
+        conn.commit()
+
+    return RedirectResponse("/adminok", status_code=303)
 
 # ===============================
 # KÖLCSÖNZÉS / VISSZAHOZÁS
@@ -175,13 +279,14 @@ def konyv_kolcsonzes(request: Request, konyv_id: int):
 
     with engine.connect() as conn:
         conn.execute(text("""
-            UPDATE konyvek
-            SET elerheto = NOT elerheto
-            WHERE id = :id
-        """), {"id": konyv_id})
+                          UPDATE konyvek
+                          SET elerheto = NOT elerheto
+                          WHERE id = :id
+                          """), {"id": konyv_id})
         conn.commit()
 
     return {"uzenet": "Státusz frissítve"}
+
 
 # ===============================
 # TÖRLÉS

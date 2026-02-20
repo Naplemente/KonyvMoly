@@ -145,24 +145,23 @@ button:hover {
         <strong>📚 Könyvkezelő Admin</strong>
     </div>
 
-    <div style="display:flex; align-items:center; gap:15px;">
-        <button id="darkToggle" style="background:#444; color:white;">
-            🌙
-        </button>
+    <div>
+    Bejelentkezve: <strong>{{ request.session.get('admin') }}</strong>
 
-        Bejelentkezve:
-        <strong>{{ request.session.get('admin') }}</strong>
-
-        <a href="/logout" style="
-            background:#e74c3c;
-            color:white;
-            padding:6px 10px;
-            border-radius:6px;
-            text-decoration:none;
-        ">
-            Kijelentkezés
+    {% if request.session.get("role") == "superadmin" %}
+        <a href="/adminok"
+           style="background:#f39c12;color:white;padding:6px 10px;margin-left:10px;border-radius:6px;text-decoration:none;">
+           Admin kezelő
         </a>
-    </div>
+    {% endif %}
+
+    <a href="/logout"
+       style="background:#e74c3c;color:white;padding:6px 10px;margin-left:10px;border-radius:6px;text-decoration:none;">
+       Kijelentkezés
+    </a>
+</div>
+
+
 </div>
 
 <!-- STATISZTIKA -->
