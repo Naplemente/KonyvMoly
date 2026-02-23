@@ -151,17 +151,4 @@ function ujKonyvHozzaadas(e) {
             document.getElementById("konyv-form").reset();
             betoltKonyvek();
         });
-
-    async function loadStats() {
-    const res = await fetch("/statisztika");
-    const data = await res.json();
-
-    document.getElementById("stats").innerHTML = `
-        <div class="card">📚 Összes könyv: <strong>${data.osszes}</strong></div>
-        <div class="card">✅ Elérhető: <strong>${data.elerheto}</strong></div>
-        <div class="card">📕 Kölcsönzött: <strong>${data.kolcsonzott}</strong></div>
-    `;
-}
-
-loadStats();
 }
