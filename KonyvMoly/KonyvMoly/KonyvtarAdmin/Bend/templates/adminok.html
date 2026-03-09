@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<title>Fiók kezelő</title>
+<style>
+body {font-family: Arial, sans-serif;margin: 40px;background-color: #f4f6f8;transition: 0.3s;}
+h1 {margin-bottom: 20px;}
+.card {background: white;padding: 20px;margin-bottom: 30px;border-radius: 8px;box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);transition: 0.3s;}
+.card:hover {transform: translateY(-4px);box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);}
+table {width: 100%;border-collapse: collapse;}
+th, td {padding: 10px;border-bottom: 1px solid #ddd;text-align: left;}
+th {background: #3498db;color: white;}
+button {padding: 6px 12px;border-radius: 6px;border: none;cursor: pointer;transition: 0.25s;}
+.danger {background: #e74c3c;color: white;}
+.danger:hover {background: #c0392b;}
+input, select {padding: 8px;margin-right: 10px;border-radius: 6px;border: 1px solid #ccc;}
+.navbar {background: #2c3e50;color: white;padding: 15px 25px;display: flex;justify-content: space-between;align-items: center;margin: -40px -40px 30px -40px;}
+.navbar a {background: #e74c3c;color: white;padding: 6px 10px;margin-left: 15px;border-radius: 6px;text-decoration: none;transition: 0.25s;}
+.navbar a:hover {opacity: 0.9;transform: translateY(-2px);}
+.error-box {background-color: #f8d7da;color: #842029;padding: 12px 15px;border-radius: 6px;margin-bottom: 20px;border: 1px solid #f5c2c7;font-weight: 500;}
+</style>
+</head>
+<body>
+
+<div class="navbar">
+    <div><strong>🛡️ Admin kezelő panel</strong></div>
+    <div>
+        <a href="/">Dashboard</a>
+    </div>
+</div>
+
+<h1>Superadmin felület</h1>
+
+<div class="card">
+    <h2>Fiókok listája</h2>
+
+    {% if error %}
+        <div class="error-box">
+            {{ error }}
+        </div>
+    {% endif %}
+
+    <table>
+        <thead>
+            <tr>
+                <th>Felhasználónév</th>
+                <th>Szerepkör</th>
+                <th>Művelet</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for admin in adminok %}
+        <tr>
+            <td>{{ admin.nev }}</td>
+
+            <td>
+                {% if admin.role == "user" %}
+                    Kölcsönző
+                {% elif admin.role == "admin" %}
+                    Admin
+                {% elif admin.role == "superadmin" %}
+                    Superadmin
+                {% endif %}
+            </td>
+
+            <td>
+                {% if admin.id == request.session.get("user_id") %}
+                    Saját fiók
+
+                {% elif request.session.get("role") == "superadmin" %}
+                    <form method="post" action="/admin-torles/{{ admin.id }}" style="display:inline;">
+                        <button class="danger">Törlés</button>
+                    </form>
+
+                {% elif request.session.get("role") == "admin" and admin.role == "user" %}
+                    <form method="post" action="/admin-torles/{{ admin.id }}" style="display:inline;">
+                        <button class="danger">Törlés</button>
+                    </form>
+
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h2>Új fiók létrehozása</h2>
+    <form method="post" action="/admin-letrehozas">
+        <input type="text" name="nev" placeholder="Név" required>
+        <input type="email" name="email" placeholder="Email" required>
+        <input type="password" name="password" placeholder="Jelszó" required>
+
+        <select name="role">
+            <option value="user">Kölcsönző</option>
+            <option value="admin">Admin</option>
+        </select>
+
+        <button type="submit">Létrehozás</button>
+    </form>
+</div>
+
+</body>
+</html>
