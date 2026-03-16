@@ -1,225 +1,183 @@
 <!DOCTYPE html>
 <html lang="hu">
+
 <head>
+
 <meta charset="UTF-8">
 <title>Admin – Könyvkezelő</title>
 
 <style>
-body {
-    font-family: Arial, sans-serif;
-    margin: 40px;
-    background-color: #f4f6f8;
-    transition: background 0.3s ease, color 0.3s ease;
+
+body{
+font-family:Arial;
+margin:40px;
+background:#f4f6f8;
 }
 
-h1 { margin-bottom: 10px; }
-
-.card {
-    background: white;
-    padding: 20px;
-    margin-bottom: 30px;
-    border-radius: 8px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    transition: all 0.3s ease;
+.card{
+background:white;
+padding:20px;
+margin-bottom:30px;
+border-radius:8px;
+box-shadow:0 2px 6px rgba(0,0,0,0.1);
 }
 
-.card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+table{
+width:100%;
+border-collapse:collapse;
 }
 
-table {
-    width: 100%;
-    border-collapse: collapse;
+th,td{
+padding:10px;
+border-bottom:1px solid #ddd;
 }
 
-th, td {
-    padding: 10px;
-    border-bottom: 1px solid #ddd;
-    text-align: left;
+button{
+padding:8px 12px;
+border:none;
+border-radius:6px;
+cursor:pointer;
 }
 
-tbody tr {
-    transition: all 0.2s ease;
+.primary{
+background:#3498db;
+color:white;
 }
 
-tbody tr:hover {
-    background-color: #f0f4ff;
-    transform: scale(1.01);
+.navbar{
+background:#2c3e50;
+color:white;
+padding:15px 25px;
+display:flex;
+justify-content:space-between;
+margin:-40px -40px 30px -40px;
 }
 
-button {
-    padding: 6px 12px;
-    cursor: pointer;
-    transition: all 0.25s ease;
-    border-radius: 6px;
-    border: none;
+.navbar a{
+color:white;
+text-decoration:none;
+background:#e74c3c;
+padding:6px 10px;
+border-radius:6px;
+margin-left:10px;
 }
 
-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-}
-
-.primary {
-    background: #3498db;
-    color: white;
-}
-
-.primary:hover {
-    background: #2176bd;
-}
-
-.danger {
-    background: #e74c3c;
-    color: white;
-}
-
-.danger:hover {
-    background: #c0392b;
-}
-
-.elerheto {
-    color: green;
-    font-weight: bold;
-}
-
-.kolcsonozve {
-    color: red;
-    font-weight: bold;
-}
-
-.navbar a {
-    transition: all 0.25s ease;
-}
-
-.navbar a:hover {
-    opacity: 0.9;
-    transform: translateY(-2px);
-}
-
-/* DARK MODE */
-.dark-mode {
-    background-color: #1e1e1e;
-    color: #f1f1f1;
-}
-
-.dark-mode .card {
-    background: #2c2c2c;
-    color: white;
-}
-
-.dark-mode table {
-    color: white;
-}
-
-.dark-mode th,
-.dark-mode td {
-    border-bottom: 1px solid #444;
-}
-
-.dark-mode tbody tr:hover {
-    background-color: #333;
-}
-
-.dark-mode .navbar {
-    background: #111 !important;
-}
 </style>
 
 </head>
+
 <body>
 
-<!-- NAVBAR -->
-<div class="navbar" style="
-    background:#2c3e50;
-    color:white;
-    padding:15px 25px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin:-40px -40px 30px -40px;
-">
+<div class="navbar">
 
-    <div>
-        <strong>📚 Könyvkezelő Admin</strong>
-    </div>
-
-    <div>
-    Bejelentkezve: <strong>{{ request.session.get('admin') }}</strong>
-
-    {% if request.session.get("role") == "superadmin" %}
-        <a href="/adminok"
-           style="background:#f39c12;color:white;padding:6px 10px;margin-left:10px;border-radius:6px;text-decoration:none;">
-           Admin kezelő
-        </a>
-    {% endif %}
-
-    <a href="/logout"
-       style="background:#e74c3c;color:white;padding:6px 10px;margin-left:10px;border-radius:6px;text-decoration:none;">
-       Kijelentkezés
-    </a>
+<div>
+<strong>📚 Könyvkezelő Admin</strong>
 </div>
 
+<div>
+
+Bejelentkezve: <strong>{{ request.session.get('user') }}</strong>
+
+<a href="/adminok">Admin kezelő</a>
+
+<a href="/logout">Kijelentkezés</a>
 
 </div>
 
-<!-- STATISZTIKA -->
-<div id="stats" style="display:flex; gap:20px; margin-bottom:30px;"></div>
+</div>
 
-<!-- ÚJ KÖNYV -->
+
 <div class="card">
-    <h2>Új könyv hozzáadása</h2>
-    <form id="konyv-form">
-        <input type="text" id="title" placeholder="Cím" required>
-        <input type="text" id="author" placeholder="Szerző" required>
-        <input type="number" id="year" placeholder="Év" required>
-        <button class="primary" type="submit">Hozzáadás</button>
-    </form>
+
+<h2>Új könyv hozzáadása</h2>
+
+<form id="konyv-form">
+
+<input type="text" id="title" placeholder="Cím" required>
+
+<input type="text" id="author" placeholder="Szerző" required>
+
+<input type="number" id="year" placeholder="Év" required>
+
+<button class="primary">Hozzáadás</button>
+
+</form>
+
 </div>
 
-<!-- KÖNYVEK LISTÁJA -->
+
+
 <div class="card">
-    <h2>Könyvek listája</h2>
-    <input type="text" id="kereso"
-        placeholder="Keresés cím vagy szerző alapján..."
-        style="margin-bottom:15px; width:100%; padding:8px;">
-    <table>
-        <thead>
-            <tr>
-                <th>Cím</th>
-                <th>Szerző</th>
-                <th>Státusz</th>
-                <th>Műveletek</th>
-            </tr>
-        </thead>
-        <tbody id="konyv-lista"></tbody>
-    </table>
+
+<h2>Könyvek listája</h2>
+
+<input type="text" id="kereso" placeholder="Keresés..." style="width:100%;margin-bottom:10px;padding:8px">
+
+<table>
+
+<thead>
+
+<tr>
+<th>Cím</th>
+<th>Szerző</th>
+<th>Év</th>
+</tr>
+
+</thead>
+
+<tbody id="konyv-lista"></tbody>
+
+</table>
+
+</div>
+
+
+
+<div class="card">
+
+<h2>Kölcsönzés rögzítése</h2>
+
+<form id="kolcsonzes-form" style="display:flex; gap:10px; flex-wrap:wrap;">
+
+<select id="user" required>
+<option value="">Felhasználó kiválasztása</option>
+</select>
+
+<select id="peldany" required>
+<option value="">Példány kiválasztása</option>
+</select>
+
+<input type="date" id="hatarido" required>
+
+<button class="primary">Kölcsönzés</button>
+
+</form>
+
+</div>
+
+<div class="card">
+
+<h2>Aktív kölcsönzések</h2>
+
+<table>
+
+<thead>
+<tr>
+<th>Könyv</th>
+<th>Felhasználó</th>
+<th>Kölcsönzés</th>
+<th>Határidő</th>
+<th>Művelet</th>
+</tr>
+</thead>
+
+<tbody id="kolcsonzes-lista"></tbody>
+
+</table>
+
 </div>
 
 <script src="/static/js/main.js"></script>
-
-<script>
-const toggleBtn = document.getElementById("darkToggle");
-
-// Betöltéskor ellenőrizzük
-if (localStorage.getItem("darkMode") === "on") {
-    document.body.classList.add("dark-mode");
-    toggleBtn.textContent = "☀️";
-}
-
-toggleBtn.addEventListener("click", () => {
-    document.body.classList.toggle("dark-mode");
-
-    if (document.body.classList.contains("dark-mode")) {
-        localStorage.setItem("darkMode", "on");
-        toggleBtn.textContent = "☀️";
-    } else {
-        localStorage.setItem("darkMode", "off");
-        toggleBtn.textContent = "🌙";
-    }
-});
-</script>
 
 </body>
 </html>

@@ -24,10 +24,30 @@ justify-content:space-between;
 align-items:center;
 }
 
+.navbar-right{
+display:flex;
+align-items:center;
+gap:15px;
+}
+
 .navbar a{
 color:white;
-margin-left:15px;
 text-decoration:none;
+padding:6px 12px;
+border-radius:6px;
+transition:0.2s;
+}
+
+.navbar a:hover{
+background:#1f2d3a;
+}
+
+.logout{
+background:#e74c3c;
+}
+
+.logout:hover{
+background:#c0392b;
 }
 
 /* CONTENT */
@@ -119,10 +139,14 @@ margin-bottom:15px;
 🛡️ Admin kezelő panel
 </div>
 
-<div>
-Bejelentkezve: <strong>{{ request.session.get("user") }}</strong>
+<div class="navbar-right">
+
+<span>Bejelentkezve: <strong>{{ request.session.get("user") }}</strong></span>
+
 <a href="/">Dashboard</a>
-<a href="/logout">Kijelentkezés</a>
+
+<a href="/logout" class="logout">Kijelentkezés</a>
+
 </div>
 
 </div>
