@@ -1,129 +1,194 @@
-print("EZ A MAIN FUT")
-
 import os
-from fastapi import FastAPI, Request, Form
+import bcrypt
+from fastapi import FastAPI, Request, Form, Body
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import create_engine, text
 from starlette.middleware.sessions import SessionMiddleware
-import bcrypt
 
 app = FastAPI()
 
-# ====== SESSION ======
 app.add_middleware(SessionMiddleware, secret_key="nagyon_titkos_kulcs")
 
-# ====== TEMPLATE ======
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
-# ====== STATIC ======
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# ====== ADATBÁZIS ======
 engine = create_engine("mysql+pymysql://root:@localhost/konyvek_adatbazis")
 
-# ====== FŐOLDAL ======
+# =====================
+# FŐOLDAL
+# =====================
+
 @app.get("/")
 def index(request: Request):
+
     if not request.session.get("user"):
         return RedirectResponse("/login", status_code=302)
-    return templates.TemplateResponse("index.html", {"request": request})
 
-# ====== LOGIN ======
+    return templates.TemplateResponse(
+        "index.html",
+        {
+            "request": request,
+            "nev": request.session.get("user"),
+            "role": request.session.get("role")
+        }
+    )
+
+
+# =====================
+# LOGIN OLDAL
+# =====================
+
+@app.get("/login")
+def login_get(request: Request):
+
+    return templates.TemplateResponse(
+        "login.html",
+        {"request": request}
+    )
+
+
+# =====================
+# LOGIN
+# =====================
+
 @app.post("/login")
-def login_post(request: Request, username: str = Form(...), password: str = Form(...)):
+def login_post(request: Request, email: str = Form(...), password: str = Form(...)):
 
-    with engine.connect() as conn:
-        user = conn.execute(
-            text("SELECT * FROM admin_users WHERE username = :username"),
-            {"username": username}
-        ).fetchone()
+    # SUPERADMIN (nincs DB-ben)
+    if email == "superadmin" and password == "superadmin123":
 
-    if user and bcrypt.checkpw(password.encode(), user.password.encode()):
-        request.session["user"] = user.username
-        request.session["role"] = user.role
+        request.session["user"] = "Superadmin"
+        request.session["role"] = "superadmin"
+
         return RedirectResponse("/", status_code=302)
 
-    return templates.TemplateResponse("login.html", {
-        "request": request,
-        "error": True
-    })
+    with engine.connect() as conn:
 
-# ====== GET – Könyvek ======
+        user = conn.execute(
+            text("SELECT * FROM felhasznalok WHERE email = :email"),
+            {"email": email}
+        ).fetchone()
+
+    if user and bcrypt.checkpw(password.encode(), user.jelszo_hash.encode()):
+
+        request.session["user"] = user.nev
+        request.session["role"] = user.role
+
+        return RedirectResponse("/", status_code=302)
+
+    return templates.TemplateResponse(
+        "login.html",
+        {"request": request, "error": True}
+    )
+
+
+# =====================
+# LOGOUT
+# =====================
+
+@app.get("/logout")
+def logout(request: Request):
+
+    request.session.clear()
+
+    return RedirectResponse("/login", status_code=302)
+
+
+# =====================
+# KÖNYVEK LISTÁJA
+# =====================
+
 @app.get("/konyvek")
 def konyvek_lista():
+
     with engine.connect() as conn:
+
         result = conn.execute(text("""
-            SELECT id, cim, szerzo, kiadas_eve, elerheto FROM konyvek
+        SELECT id, cim, szerzo_id, kiadas_eve
+        FROM konyvek
         """))
+
         konyvek = []
+
         for row in result:
             konyvek.append({
                 "id": row.id,
                 "title": row.cim,
-                "author": row.szerzo,
+                "author": row.szerzo_id,
                 "year": row.kiadas_eve,
-                "available": row.elerheto
+                "available": True
             })
-        return konyvek
 
-# ====== POST – Új könyv ======
+    return konyvek
+
+
+# =====================
+# KÖNYV HOZZÁADÁS
+# =====================
+
 @app.post("/konyv-hozzaadas")
-def konyv_hozzaadas(konyv: dict):
+def konyv_hozzaadas(konyv: dict = Body(...)):
+
     with engine.connect() as conn:
+
         conn.execute(text("""
-            INSERT INTO konyvek (cim, szerzo, kiadas_eve, elerheto)
-            VALUES (:cim, :szerzo, :ev, :elerheto)
+        INSERT INTO konyvek (cim, szerzo_id, kiadas_eve)
+        VALUES (:cim, :szerzo, :ev)
         """), {
             "cim": konyv["title"],
             "szerzo": konyv["author"],
-            "ev": konyv["year"],
-            "elerheto": konyv["available"]
+            "ev": konyv["year"]
         })
-        conn.commit()
-    return {"uzenet": "Könyv hozzáadva"}
 
-# ====== PUT – Kölcsönzés ======
-@app.put("/konyv-kolcsonzes/{konyv_id}")
-def konyv_kolcsonzes(konyv_id: int):
-    with engine.connect() as conn:
-        conn.execute(text("""
-            UPDATE konyvek
-            SET elerheto = NOT elerheto
-            WHERE id = :id
-        """), {"id": konyv_id})
         conn.commit()
-    return {"uzenet": "Státusz frissítve"}
 
-# ====== DELETE – Törlés ======
-@app.delete("/konyv-torles/{konyv_id}")
-def konyv_torles(konyv_id: int):
-    with engine.connect() as conn:
-        conn.execute(text("DELETE FROM konyvek WHERE id = :id"),
-                     {"id": konyv_id})
-        conn.commit()
-    return {"uzenet": "Könyv törölve"}
+    return {"message": "Könyv hozzáadva"}
+
+
+# =====================
+# ADMIN PANEL
+# =====================
 
 @app.get("/adminok")
-def admin_kezel(request: Request):
+def adminok(request: Request):
+
     if request.session.get("role") != "superadmin":
-        return RedirectResponse("/", status_code=303)
+        return RedirectResponse("/", status_code=302)
+
+    success = request.query_params.get("success")
 
     with engine.connect() as conn:
-        result = conn.execute(text("SELECT id, username, role FROM admin_users"))
+
+        result = conn.execute(text("""
+        SELECT id, nev, role
+        FROM felhasznalok
+        """))
+
         adminok = result.fetchall()
 
     return templates.TemplateResponse(
         "adminok.html",
-        {"request": request, "adminok": adminok}
+        {
+            "request": request,
+            "adminok": adminok,
+            "success": "Fiók sikeresen létrehozva!" if success else None
+        }
     )
+
+
+# =====================
+# ADMIN LÉTREHOZÁS
+# =====================
 
 @app.post("/admin-letrehozas")
 def admin_letrehozas(
     request: Request,
-    username: str = Form(...),
+    nev: str = Form(...),
+    email: str = Form(...),
     password: str = Form(...),
     role: str = Form(...)
 ):
@@ -131,33 +196,42 @@ def admin_letrehozas(
     if request.session.get("role") != "superadmin":
         return RedirectResponse("/", status_code=302)
 
+    hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
     with engine.connect() as conn:
 
-        existing = conn.execute(
-            text("SELECT id FROM admin_users WHERE username = :username"),
-            {"username": username}
-        ).fetchone()
-
-        if existing:
-            return templates.TemplateResponse("adminok.html", {
-                "request": request,
-                "error": "Ez a felhasználónév már létezik!"
-            })
-
-        # 🔐 HASH készítése
-        hashed_password = bcrypt.hashpw(
-            password.encode(),
-            bcrypt.gensalt()
-        ).decode()
-
         conn.execute(text("""
-            INSERT INTO admin_users (username, password, role)
-            VALUES (:username, :password, :role)
+        INSERT INTO felhasznalok
+        (nev,email,jelszo_hash,regisztracio_datuma,role)
+        VALUES (:nev,:email,:hash,NOW(),:role)
         """), {
-            "username": username,
-            "password": hashed_password,
+            "nev": nev,
+            "email": email,
+            "hash": hashed,
             "role": role
         })
+
+        conn.commit()
+
+    return RedirectResponse("/adminok?success=1", status_code=302)
+
+
+# =====================
+# ADMIN TÖRLÉS
+# =====================
+
+@app.post("/admin-torles/{user_id}")
+def admin_torles(user_id: int, request: Request):
+
+    if request.session.get("role") != "superadmin":
+        return RedirectResponse("/", status_code=302)
+
+    with engine.connect() as conn:
+
+        conn.execute(
+            text("DELETE FROM felhasznalok WHERE id = :id"),
+            {"id": user_id}
+        )
 
         conn.commit()
 
