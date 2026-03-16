@@ -1,2 +1,0 @@
-A függőségek telepítéséhez futtasd a parancsot pycharmba:
-pip install -r requirements.txt
