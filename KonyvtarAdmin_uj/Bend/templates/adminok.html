@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="hu">
+
+<head>
+<meta charset="UTF-8">
+<title>Admin kezelő</title>
+
+<style>
+
+body{
+font-family:Arial;
+margin:0;
+background:#f4f6f8;
+}
+
+/* NAVBAR */
+
+.navbar{
+background:#2c3e50;
+color:white;
+padding:15px 30px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+.navbar a{
+color:white;
+margin-left:15px;
+text-decoration:none;
+}
+
+/* CONTENT */
+
+.container{
+padding:40px;
+}
+
+.card{
+background:white;
+padding:25px;
+border-radius:10px;
+box-shadow:0 2px 8px rgba(0,0,0,0.1);
+margin-bottom:30px;
+}
+
+/* TABLE */
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:10px;
+}
+
+th{
+background:#3498db;
+color:white;
+padding:10px;
+}
+
+td{
+padding:10px;
+border-bottom:1px solid #ddd;
+}
+
+/* BUTTONS */
+
+button{
+border:none;
+padding:8px 14px;
+border-radius:6px;
+cursor:pointer;
+}
+
+.primary{
+background:#3498db;
+color:white;
+}
+
+.danger{
+background:#e74c3c;
+color:white;
+}
+
+/* FORM */
+
+.form-row{
+display:flex;
+gap:10px;
+flex-wrap:wrap;
+margin-top:15px;
+}
+
+input,select{
+padding:8px;
+border-radius:6px;
+border:1px solid #ccc;
+}
+
+/* SUCCESS */
+
+.success{
+background:#d4edda;
+color:#155724;
+padding:10px;
+border-radius:6px;
+margin-bottom:15px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="navbar">
+
+<div>
+🛡️ Admin kezelő panel
+</div>
+
+<div>
+Bejelentkezve: <strong>{{ request.session.get("user") }}</strong>
+<a href="/">Dashboard</a>
+<a href="/logout">Kijelentkezés</a>
+</div>
+
+</div>
+
+
+<div class="container">
+
+
+<h1>Superadmin felület</h1>
+
+
+<!-- SIKER ÜZENET -->
+
+{% if success %}
+<div class="success">
+✔ {{ success }}
+</div>
+{% endif %}
+
+
+
+<div class="card">
+
+<h2>Fiókok listája</h2>
+
+<table>
+
+<tr>
+<th>Név</th>
+<th>Szerepkör</th>
+<th>Művelet</th>
+</tr>
+
+{% for admin in adminok %}
+
+<tr>
+
+<td>{{ admin.nev }}</td>
+
+<td>
+
+{% if admin.role == "admin" %}
+Admin
+{% else %}
+Felhasználó
+{% endif %}
+
+</td>
+
+<td>
+
+<form method="post" action="/admin-torles/{{ admin.id }}">
+
+<button class="danger"
+onclick="return confirm('Biztosan törlöd ezt a felhasználót?')">
+
+Törlés
+
+</button>
+
+</form>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+</div>
+
+
+
+<div class="card">
+
+<h2>Új fiók létrehozása</h2>
+
+<form method="post" action="/admin-letrehozas">
+
+<div class="form-row">
+
+<input type="text"
+name="nev"
+placeholder="Felhasználónév"
+required>
+
+<input type="email"
+name="email"
+placeholder="Email"
+required>
+
+<input type="password"
+name="password"
+placeholder="Jelszó"
+required>
+
+<select name="role">
+
+<option value="user">
+Felhasználó
+</option>
+
+<option value="admin">
+Admin
+</option>
+
+</select>
+
+<button class="primary">
+Létrehozás
+</button>
+
+</div>
+
+</form>
+
+</div>
+
+
+</div>
+
+</body>
+</html>
