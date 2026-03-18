@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <title>Felhasználói felület</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #f4f6f8;
+            margin: 0;
+        }
+
+        /* NAVBAR */
+        .navbar {
+            background: #2c3e50;
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* CONTAINER */
+        .container {
+            padding: 40px;
+        }
+
+        /* CARD */
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* TABLE */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th {
+            background: #3498db;
+            color: white;
+            padding: 12px;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        /* SZÍNEK */
+        .ok {
+            background: #eafaf1;
+        }
+
+        .kozeli {
+            background: #fff3cd;
+        }
+
+        .lejart {
+            background: #f8d7da;
+        }
+
+        /* BADGE */
+        .badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: white;
+        }
+
+        .green {
+            background: #2ecc71;
+        }
+
+        .yellow {
+            background: #f39c12;
+        }
+
+        .red {
+            background: #e74c3c;
+        }
+
+        /* BUTTON */
+        button {
+            padding: 6px 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: #3498db;
+            color: white;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        /* EMPTY */
+        .empty {
+            text-align: center;
+            padding: 20px;
+            color: #777;
+        }
+
+        .blue {
+            background: #3498db;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="navbar">
+    <div>📚 Könyvtár</div>
+    <div>Üdv, <strong>{{ nev }}</strong> 👋</div>
+</div>
+
+<div class="container">
+    <div class="card">
+
+        <h2>Kikölcsönzött könyveid</h2>
+
+        {% if konyvek|length == 0 %}
+        <div class="empty">Nincs aktív kölcsönzésed 📭</div>
+        {% else %}
+
+        <table>
+            <tr>
+                <th>Könyv</th>
+                <th>Kölcsönzés</th>
+                <th>Határidő</th>
+                <th>Állapot</th>
+                <th>Késedelmi díj</th>
+                <th>Művelet</th>
+            </tr>
+
+            {% for k in konyvek %}
+            <tr class="{% if k.diff < 0 %}lejart{% elif k.diff <= 3 %}kozeli{% else %}ok{% endif %}">
+
+                <td>{{ k.book }}</td>
+                <td>{{ k.start }}</td>
+                <td>{{ k.deadline }}</td>
+
+                <td>
+                    {% if k.diff < 0 %}
+                    <span class="badge red">Lejárt</span>
+                    {% elif k.hosszabbitva %}
+                    <span class="badge blue">Már hosszabbítva</span>
+                    {% elif k.diff > 2 %}
+                    <span class="badge yellow">Túl korai</span>
+                    {% else %}
+                    <span class="badge green">{{ k.diff }} nap</span>
+                    {% endif %}
+                </td>
+                
+                <td>
+                    {% if k.keses > 0 %}
+                    <span class="badge red">{{ k.keses }} Ft</span>
+                    {% else %}
+                    <span class="badge green">0 Ft</span>
+                    {% endif %}
+                </td>
+
+                <!-- 🔘 GOMB -->
+                <td>
+                    {% if k.diff < 0 %}
+                    <span class="badge red">Lejárt</span>
+                    {% elif k.hosszabbitva %}
+                    <span class="badge blue">
+        {{ k.diff }} nap (hosszabbítva)
+    </span>
+                    {% elif k.diff > 2 %}
+                    <span class="badge yellow">
+        {{ k.diff }} nap
+    </span>
+                    {% else %}
+                    <span class="badge green">
+        {{ k.diff }} nap
+    </span>
+                    {% endif %}
+                </td>
+
+            </tr>
+            {% endfor %}
+
+        </table>
+
+        {% endif %}
+
+    </div>
+</div>
+
+<script>
+    function hosszabbit(id) {
+        fetch(`/hosszabbit/${id}`, {
+            method: "POST"
+        })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.message);
+                location.reload();
+            })
+            .catch(() => alert("Hiba történt!"));
+    }
+</script>
+
+</body>
+</html>
