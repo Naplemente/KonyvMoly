@@ -40,10 +40,6 @@ def kuld_email(cim, konyv):
 
                 <p style="font-size:16px;">Szia 👋</p>
 
-                <p style="font-size:15px; color:#555;">
-                    A következő könyved hamarosan lejár:
-                </p>
-
                 <!-- BOOK CARD -->
                 <div style="background:#ecf5ff; border-left:5px solid #3498db; padding:15px; border-radius:8px; margin:20px 0;">
                     <strong style="font-size:18px;">{konyv}</strong>
@@ -633,6 +629,32 @@ def hosszabbit(kolcsonzes_id: int):
 
     return {"message": "Sikeres hosszabbítás (+7 nap)"}
 
+@app.post("/pont-noveles/{pont}")
+def pont_noveles(pont: int, request: Request):
+    user = request.session.get("user")
+
+    with engine.connect() as conn:
+        conn.execute(text("""
+            UPDATE felhasznalok 
+            SET score = score + :pont 
+            WHERE nev = :nev
+        """), {"pont": pont, "nev": user})
+        conn.commit()
+
+    return {"message": "Pont mentve"}
+
+@app.get("/toplista")
+def toplista():
+    with engine.connect() as conn:
+        result = conn.execute(text("""
+            SELECT nev, score 
+            FROM felhasznalok 
+            WHERE torolt = FALSE
+            ORDER BY score DESC
+            LIMIT 10
+        """))
+
+    return [{"nev": r.nev, "score": r.score} for r in result]
 
 # =====================
 # KÖNYV TÖRLÉS (SOFT DELETE)

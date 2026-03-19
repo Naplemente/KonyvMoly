@@ -315,5 +315,8 @@ function betoltHistory() {
 
                 tbody.appendChild(tr);
             });
+
         });
+
+
 }
