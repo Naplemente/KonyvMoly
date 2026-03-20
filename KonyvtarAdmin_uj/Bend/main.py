@@ -26,6 +26,12 @@ def hash_pw(pw):
 def verify_pw(pw, hashed):
     return bcrypt.verify(pw, hashed)
 
+def is_logged_in(request: Request):
+    return request.session.get("user") is not None
+
+def is_admin(request: Request):
+    return request.session.get("role") in ["admin", "superadmin"]
+
 # =====================
 # EMAIL
 # =====================
@@ -90,9 +96,14 @@ def kuld_email(cim, konyv):
 
 # =====================
 # ÉRTESÍTÉS
-# =====================
+# ====================
+
+
 @app.get("/ertesitesek")
-def ertesitesek():
+def ertesitesek(request: Request):
+    if not is_logged_in(request):
+        return RedirectResponse("/login", status_code=302)
+
     with engine.connect() as conn:
         result = conn.execute(text("""
             SELECT f.email, k.cim, kol.visszahozas_datum
@@ -189,9 +200,9 @@ def index(request: Request):
 def login_get(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
+
 @app.post("/login")
 def login_post(request: Request, email: str = Form(...), password: str = Form(...)):
-
     # 🔥 SUPERADMIN (ELSŐ!)
     if email == "superadmin" and password == "SuperAdmin321":
         request.session["user"] = "Superadmin"
@@ -214,8 +225,10 @@ def login_post(request: Request, email: str = Form(...), password: str = Form(..
         except Exception as e:
             print("VERIFY HIBA:", e)
 
-    return templates.TemplateResponse("login.html", {"request": request, "error": True})
-
+    return templates.TemplateResponse("login.html", {
+        "request": request,
+        "error": True
+    })
 
 # =====================
 # LOGOUT
@@ -230,39 +243,49 @@ def logout(request: Request):
 # KÖNYVEK LISTA
 # =====================
 @app.get("/konyvek")
-def konyvek_lista():
+def konyvek_lista(request: Request):
     if not is_logged_in(request):
-        return RedirectResponse("/login", status_code=302)	
+        return RedirectResponse("/login", status_code=302)
+
     with engine.connect() as conn:
         result = conn.execute(text("""
-                                   SELECT k.id,
-                                          k.cim,
-                                          s.nev                                                                 AS szerzo,
-                                          k.kiadas_eve,
-                                          COUNT(p.id)                                                           AS osszes,
-                                          SUM(CASE WHEN p.elerheto = TRUE AND p.aktiv = TRUE THEN 1 ELSE 0 END) AS elerheto
-                                   FROM konyvek k
-                                            JOIN szerzok s ON k.szerzo_id = s.id
-                                            LEFT JOIN peldanyok p ON p.konyv_id = k.id AND p.aktiv = TRUE
-                                   WHERE k.torolt = FALSE
-                                   GROUP BY k.id
-                                   """))
+            SELECT k.id,
+                   k.cim,
+                   s.nev AS szerzo,
+                   k.kiadas_eve,
+                   COUNT(p.id) AS osszes,
+                   SUM(CASE 
+                        WHEN p.elerheto = TRUE AND p.aktiv = TRUE 
+                        THEN 1 ELSE 0 
+                   END) AS elerheto
+            FROM konyvek k
+            JOIN szerzok s ON k.szerzo_id = s.id
+            LEFT JOIN peldanyok p ON p.konyv_id = k.id AND p.aktiv = TRUE
+            WHERE k.torolt = FALSE
+            GROUP BY k.id
+        """))
 
-    return [{
-        "id": r.id,
-        "title": r.cim,
-        "author": r.szerzo,
-        "year": r.kiadas_eve,
-        "total": int(r.osszes or 0),
-        "available": int(r.elerheto or 0)
-    } for r in result]
+    return [
+        {
+            "id": r.id,
+            "title": r.cim,
+            "author": r.szerzo,
+            "year": r.kiadas_eve,
+            "total": int(r.osszes or 0),
+            "available": int(r.elerheto or 0)
+        }
+        for r in result
+    ]
 
 
 # =====================
 # KÖNYV HOZZÁADÁS
 # =====================
 @app.post("/konyv-hozzaadas")
-def konyv_hozzaadas(konyv: dict = Body(...)):
+def konyv_hozzaadas(request: Request, konyv: dict = Body(...)):
+    if not is_admin(request):
+        return {"error": "Nincs jogosultság"}
+
     with engine.connect() as conn:
         szerzo = conn.execute(text(
             "SELECT id FROM szerzok WHERE nev=:nev"
@@ -279,23 +302,22 @@ def konyv_hozzaadas(konyv: dict = Body(...)):
             ), {"nev": konyv["author"]}).fetchone()
 
         conn.execute(text("""
-                          INSERT INTO konyvek (cim, szerzo_id, kiadas_eve)
-                          VALUES (:cim, :szerzo, :ev)
-                          """), {
-                         "cim": konyv["title"],
-                         "szerzo": szerzo.id,
-                         "ev": konyv["year"]
-                     })
+            INSERT INTO konyvek (cim, szerzo_id, kiadas_eve)
+            VALUES (:cim, :szerzo, :ev)
+        """), {
+            "cim": konyv["title"],
+            "szerzo": szerzo.id,
+            "ev": konyv["year"]
+        })
         conn.commit()
 
         # 🔥 FIX
         konyv_id = conn.execute(text("SELECT LAST_INSERT_ID()")).fetchone()[0]
 
         conn.execute(text("""
-                          INSERT INTO peldanyok (konyv_id, allapot, elerheto, aktiv)
-                          VALUES (:id, 'uj', TRUE, TRUE)
-                          """), {"id": konyv_id})
-
+            INSERT INTO peldanyok (konyv_id, allapot, elerheto, aktiv)
+            VALUES (:id, 'uj', TRUE, TRUE)
+        """), {"id": konyv_id})
         conn.commit()
 
     return {"message": "Könyv + példány létrehozva"}
@@ -305,30 +327,43 @@ def konyv_hozzaadas(konyv: dict = Body(...)):
 # PÉLDÁNYOK
 # =====================
 @app.get("/peldanyok")
-def peldanyok():
+def peldanyok(request: Request):
+    if not is_logged_in(request):
+        return RedirectResponse("/login", status_code=302)
+
     with engine.connect() as conn:
         result = conn.execute(text("""
-                                   SELECT p.id, k.cim
-                                   FROM peldanyok p
-                                            JOIN konyvek k ON p.konyv_id = k.id
-                                   WHERE p.elerheto = TRUE
-                                     AND p.aktiv = TRUE
-                                   """))
+            SELECT p.id, k.cim
+            FROM peldanyok p
+            JOIN konyvek k ON p.konyv_id = k.id
+            WHERE p.elerheto = TRUE
+              AND p.aktiv = TRUE
+        """))
 
-    return [{"id": r.id, "book": r.cim} for r in result]
+    return [
+        {
+            "id": r.id,
+            "book": r.cim
+        }
+        for r in result
+    ]
 
 
 # =====================
 # + PÉLDÁNY
 # =====================
 @app.post("/peldany-tobb")
-def peldany_tobb(konyv_id: int = Form(...), darab: int = Form(...)):
+def peldany_tobb(request: Request, konyv_id: int = Form(...), darab: int = Form(...)):
+    if not is_admin(request):
+        return {"error": "Nincs jogosultság"}
+
     with engine.connect() as conn:
         for _ in range(darab):
             conn.execute(text("""
-                              INSERT INTO peldanyok (konyv_id, allapot, elerheto, aktiv)
-                              VALUES (:id, 'uj', TRUE, TRUE)
-                              """), {"id": konyv_id})
+                INSERT INTO peldanyok (konyv_id, allapot, elerheto, aktiv)
+                VALUES (:id, 'uj', TRUE, TRUE)
+            """), {"id": konyv_id})
+
         conn.commit()
 
     return {"message": f"{darab} példány hozzáadva"}
@@ -366,19 +401,31 @@ def peldany_torol(konyv_id: int = Form(...)):
 # KÖLCSÖNZÉS
 # =====================
 @app.post("/kolcsonzes")
-def kolcsonzes(peldany_id: int = Form(...), felhasznalo_id: int = Form(...), hatarido: str = Form(...)):
+def kolcsonzes(
+    request: Request,
+    peldany_id: int = Form(...),
+    felhasznalo_id: int = Form(...),
+    hatarido: str = Form(...)
+):
+    if not is_admin(request):
+        return {"error": "Nincs jogosultság"}
+
     with engine.connect() as conn:
         conn.execute(text("""
-                          INSERT INTO kolcsonzesek
-                              (peldany_id, felhasznalo_id, kolcsonzes_datum, visszahozas_datum)
-                          VALUES (:p, :u, CURDATE(), :h)
-                          """), {"p": peldany_id, "u": felhasznalo_id, "h": hatarido})
+            INSERT INTO kolcsonzesek
+                (peldany_id, felhasznalo_id, kolcsonzes_datum, visszahozas_datum)
+            VALUES (:p, :u, CURDATE(), :h)
+        """), {
+            "p": peldany_id,
+            "u": felhasznalo_id,
+            "h": hatarido
+        })
 
         conn.execute(text("""
-                          UPDATE peldanyok
-                          SET elerheto = FALSE
-                          WHERE id = :id
-                          """), {"id": peldany_id})
+            UPDATE peldanyok
+            SET elerheto = FALSE
+            WHERE id = :id
+        """), {"id": peldany_id})
 
         conn.commit()
 
@@ -389,53 +436,62 @@ def kolcsonzes(peldany_id: int = Form(...), felhasznalo_id: int = Form(...), hat
 # AKTÍV
 # =====================
 @app.get("/kolcsonzesek")
-def kolcsonzesek():
+def kolcsonzesek(request: Request):
+    if not is_logged_in(request):
+        return RedirectResponse("/login", status_code=302)
+
     with engine.connect() as conn:
         result = conn.execute(text("""
-                                   SELECT kol.id,
-                                          k.cim,
-                                          f.nev,
-                                          kol.kolcsonzes_datum,
-                                          kol.visszahozas_datum
-                                   FROM kolcsonzesek kol
-                                            JOIN peldanyok p ON kol.peldany_id = p.id
-                                            JOIN konyvek k ON p.konyv_id = k.id
-                                            JOIN felhasznalok f ON kol.felhasznalo_id = f.id
-                                   WHERE kol.visszahozva IS NULL
-                                   """))
+            SELECT kol.id,
+                   k.cim,
+                   f.nev,
+                   kol.kolcsonzes_datum,
+                   kol.visszahozas_datum
+            FROM kolcsonzesek kol
+            JOIN peldanyok p ON kol.peldany_id = p.id
+            JOIN konyvek k ON p.konyv_id = k.id
+            JOIN felhasznalok f ON kol.felhasznalo_id = f.id
+            WHERE kol.visszahozva IS NULL
+        """))
 
-    return [{
-        "id": r.id,
-        "book": r.cim,
-        "user": r.nev,
-        "start": str(r.kolcsonzes_datum),
-        "deadline": str(r.visszahozas_datum)
-    } for r in result]
+    return [
+        {
+            "id": r.id,
+            "book": r.cim,
+            "user": r.nev,
+            "start": str(r.kolcsonzes_datum),
+            "deadline": str(r.visszahozas_datum)
+        }
+        for r in result
+    ]
 
 
 # =====================
 # VISSZAHOZÁS
 # =====================
 @app.post("/visszahoz/{kolcsonzes_id}")
-def visszahoz(kolcsonzes_id: int):
+def visszahoz(request: Request, kolcsonzes_id: int):
+    if not is_admin(request):
+        return {"error": "Nincs jogosultság"}
+
     with engine.connect() as conn:
         peldany = conn.execute(text("""
-                                    SELECT peldany_id
-                                    FROM kolcsonzesek
-                                    WHERE id = :id
-                                    """), {"id": kolcsonzes_id}).fetchone()
+            SELECT peldany_id
+            FROM kolcsonzesek
+            WHERE id = :id
+        """), {"id": kolcsonzes_id}).fetchone()
 
         conn.execute(text("""
-                          UPDATE peldanyok
-                          SET elerheto = TRUE
-                          WHERE id = :id
-                          """), {"id": peldany.peldany_id})
+            UPDATE peldanyok
+            SET elerheto = TRUE
+            WHERE id = :id
+        """), {"id": peldany.peldany_id})
 
         conn.execute(text("""
-                          UPDATE kolcsonzesek
-                          SET visszahozva = NOW()
-                          WHERE id = :id
-                          """), {"id": kolcsonzes_id})
+            UPDATE kolcsonzesek
+            SET visszahozva = NOW()
+            WHERE id = :id
+        """), {"id": kolcsonzes_id})
 
         conn.commit()
 
@@ -446,60 +502,76 @@ def visszahoz(kolcsonzes_id: int):
 # HISTORY
 # =====================
 @app.get("/kolcsonzesek-history")
-def kolcsonzesek_history():
+def kolcsonzesek_history(request: Request):
+    if not is_logged_in(request):
+        return RedirectResponse("/login", status_code=302)
+
     with engine.connect() as conn:
         result = conn.execute(text("""
-                                   SELECT k.cim,
-                                          f.nev,
-                                          kol.kolcsonzes_datum,
-                                          kol.visszahozas_datum,
-                                          kol.visszahozva
-                                   FROM kolcsonzesek kol
-                                            JOIN peldanyok p ON kol.peldany_id = p.id
-                                            JOIN konyvek k ON p.konyv_id = k.id
-                                            JOIN felhasznalok f ON kol.felhasznalo_id = f.id
-                                   ORDER BY kol.kolcsonzes_datum DESC
-                                   """))
+            SELECT k.cim,
+                   f.nev,
+                   kol.kolcsonzes_datum,
+                   kol.visszahozas_datum,
+                   kol.visszahozva
+            FROM kolcsonzesek kol
+            JOIN peldanyok p ON kol.peldany_id = p.id
+            JOIN konyvek k ON p.konyv_id = k.id
+            JOIN felhasznalok f ON kol.felhasznalo_id = f.id
+            ORDER BY kol.kolcsonzes_datum DESC
+        """))
 
-    return [{
-        "book": r.cim,
-        "user": r.nev,
-        "start": str(r.kolcsonzes_datum),
-        "deadline": str(r.visszahozas_datum),
-        "returned": str(r.visszahozva) if r.visszahozva else "Még kint"
-    } for r in result]
+    return [
+        {
+            "book": r.cim,
+            "user": r.nev,
+            "start": str(r.kolcsonzes_datum),
+            "deadline": str(r.visszahozas_datum),
+            "returned": str(r.visszahozva) if r.visszahozva else "Még kint"
+        }
+        for r in result
+    ]
 
 
 # =====================
 # FELHASZNÁLÓK
 # =====================
 @app.get("/felhasznalok")
-def felhasznalok():
+def felhasznalok(request: Request):
+    if not is_admin(request):
+        return RedirectResponse("/", status_code=302)
+
     with engine.connect() as conn:
         result = conn.execute(text("""
-                                   SELECT id, nev
-                                   FROM felhasznalok
-                                   WHERE role = 'user'
-                                     AND torolt = FALSE
-                                   """))
+            SELECT id, nev
+            FROM felhasznalok
+            WHERE role = 'user'
+              AND torolt = FALSE
+        """))
 
-    return [{"id": r.id, "name": r.nev} for r in result]
+    return [
+        {
+            "id": r.id,
+            "name": r.nev
+        }
+        for r in result
+    ]
 
 
 # =====================
 # ADMIN PANEL
 # =====================
+
 @app.get("/adminok")
 def adminok(request: Request):
-    if request.session.get("role") not in ["admin", "superadmin"]:
+    if not is_admin(request):
         return RedirectResponse("/", status_code=302)
 
     with engine.connect() as conn:
         result = conn.execute(text("""
-                                   SELECT id, nev, role
-                                   FROM felhasznalok
-                                   WHERE torolt = FALSE
-                                   """))
+            SELECT id, nev, role
+            FROM felhasznalok
+            WHERE torolt = FALSE
+        """))
         adminok = result.fetchall()
 
     return templates.TemplateResponse("adminok.html", {
@@ -512,19 +584,18 @@ def adminok(request: Request):
 # ADMIN TÖRLÉS
 # =====================
 @app.post("/admin-torles/{user_id}")
-def admin_torles(user_id: int, request: Request):
+def admin_torles(request: Request, user_id: int):
     role = request.session.get("role")
 
     if role not in ["admin", "superadmin"]:
         return RedirectResponse("/", status_code=302)
 
     with engine.connect() as conn:
-
         user = conn.execute(text("""
-                                 SELECT id, role
-                                 FROM felhasznalok
-                                 WHERE id = :id
-                                 """), {"id": user_id}).fetchone()
+            SELECT id, role
+            FROM felhasznalok
+            WHERE id = :id
+        """), {"id": user_id}).fetchone()
 
         if not user:
             return RedirectResponse("/adminok", status_code=302)
@@ -535,25 +606,25 @@ def admin_torles(user_id: int, request: Request):
 
         # ❗ van kölcsönzés?
         has_kolcsonzes = conn.execute(text("""
-                                           SELECT 1
-                                           FROM kolcsonzesek
-                                           WHERE felhasznalo_id = :id LIMIT 1
-                                           """), {"id": user_id}).fetchone()
+            SELECT 1
+            FROM kolcsonzesek
+            WHERE felhasznalo_id = :id
+            LIMIT 1
+        """), {"id": user_id}).fetchone()
 
         if has_kolcsonzes:
             # 🔥 SOFT DELETE
             conn.execute(text("""
-                              UPDATE felhasznalok
-                              SET torolt = TRUE
-                              WHERE id = :id
-                              """), {"id": user_id})
+                UPDATE felhasznalok
+                SET torolt = TRUE
+                WHERE id = :id
+            """), {"id": user_id})
         else:
             # nincs kölcsönzés → mehet a törlés
             conn.execute(text("""
-                              DELETE
-                              FROM felhasznalok
-                              WHERE id = :id
-                              """), {"id": user_id})
+                DELETE FROM felhasznalok
+                WHERE id = :id
+            """), {"id": user_id})
 
         conn.commit()
 
@@ -565,11 +636,11 @@ def admin_torles(user_id: int, request: Request):
 # =====================
 @app.post("/admin-letrehozas")
 def admin_letrehozas(
-        request: Request,
-        nev: str = Form(...),
-        email: str = Form(...),
-        password: str = Form(...),
-        role: str = Form(...)
+    request: Request,
+    nev: str = Form(...),
+    email: str = Form(...),
+    password: str = Form(...),
+    role: str = Form(...)
 ):
     session_role = request.session.get("role")
 
@@ -585,15 +656,15 @@ def admin_letrehozas(
 
     with engine.connect() as conn:
         conn.execute(text("""
-                          INSERT INTO felhasznalok
-                              (nev, email, jelszo_hash, regisztracio_datuma, role, torolt)
-                          VALUES (:nev, :email, :hash, NOW(), :role, FALSE)
-                          """), {
-                         "nev": nev,
-                         "email": email,
-                         "hash": hashed,
-                         "role": role
-                     })
+            INSERT INTO felhasznalok
+                (nev, email, jelszo_hash, regisztracio_datuma, role, torolt)
+            VALUES (:nev, :email, :hash, NOW(), :role, FALSE)
+        """), {
+            "nev": nev,
+            "email": email,
+            "hash": hashed,
+            "role": role
+        })
 
         conn.commit()
 
@@ -604,11 +675,13 @@ def admin_letrehozas(
 # HOSSZABBÍTÁS
 # =====================
 @app.post("/hosszabbit/{kolcsonzes_id}")
-def hosszabbit(kolcsonzes_id: int):
+def hosszabbit(request: Request, kolcsonzes_id: int):
+    if not is_logged_in(request):
+        return RedirectResponse("/login", status_code=302)
+
     from datetime import date
 
     with engine.connect() as conn:
-
         kol = conn.execute(text("""
             SELECT visszahozas_datum, hosszabbitva
             FROM kolcsonzesek
@@ -636,8 +709,7 @@ def hosszabbit(kolcsonzes_id: int):
         # ✅ hosszabbítás
         conn.execute(text("""
             UPDATE kolcsonzesek
-            SET 
-                visszahozas_datum = DATE_ADD(visszahozas_datum, INTERVAL 7 DAY),
+            SET visszahozas_datum = DATE_ADD(visszahozas_datum, INTERVAL 7 DAY),
                 hosszabbitva = TRUE
             WHERE id = :id
         """), {"id": kolcsonzes_id})
@@ -647,65 +719,84 @@ def hosszabbit(kolcsonzes_id: int):
     return {"message": "Sikeres hosszabbítás (+7 nap)"}
 
 @app.post("/pont-noveles/{pont}")
-def pont_noveles(pont: int, request: Request):
+def pont_noveles(request: Request, pont: int):
+    if not is_logged_in(request):
+        return RedirectResponse("/login", status_code=302)
+
     user = request.session.get("user")
 
     with engine.connect() as conn:
         conn.execute(text("""
-            UPDATE felhasznalok 
-            SET score = score + :pont 
+            UPDATE felhasznalok
+            SET score = score + :pont
             WHERE nev = :nev
-        """), {"pont": pont, "nev": user})
+        """), {
+            "pont": pont,
+            "nev": user
+        })
+
         conn.commit()
 
     return {"message": "Pont mentve"}
 
 @app.get("/toplista")
-def toplista():
+def toplista(request: Request):
+    if not is_logged_in(request):
+        return RedirectResponse("/login", status_code=302)
+
     with engine.connect() as conn:
         result = conn.execute(text("""
-            SELECT nev, score 
-            FROM felhasznalok 
+            SELECT nev, score
+            FROM felhasznalok
             WHERE torolt = FALSE
             ORDER BY score DESC
             LIMIT 10
         """))
 
-    return [{"nev": r.nev, "score": r.score} for r in result]
+    return [
+        {
+            "nev": r.nev,
+            "score": r.score
+        }
+        for r in result
+    ]
 
 # =====================
 # KÖNYV TÖRLÉS (SOFT DELETE)
 # =====================
 @app.delete("/konyv-torles/{konyv_id}")
-def konyv_torles(konyv_id: int):
+def konyv_torles(request: Request, konyv_id: int):
+    if not is_admin(request):
+        return {"error": "Nincs jogosultság"}
+
     try:
         with engine.connect() as conn:
-
             # ❗ van aktív kölcsönzés?
             aktiv = conn.execute(text("""
-                                      SELECT 1
-                                      FROM kolcsonzesek kol
-                                               JOIN peldanyok p ON kol.peldany_id = p.id
-                                      WHERE p.konyv_id = :id
-                                        AND kol.visszahozva IS NULL LIMIT 1
-                                      """), {"id": konyv_id}).fetchone()
+                SELECT 1
+                FROM kolcsonzesek kol
+                JOIN peldanyok p ON kol.peldany_id = p.id
+                WHERE p.konyv_id = :id
+                  AND kol.visszahozva IS NULL
+                LIMIT 1
+            """), {"id": konyv_id}).fetchone()
 
             if aktiv:
                 return {"message": "Nem törölhető! Van aktív kölcsönzés."}
 
             # példányok deaktiválása
             conn.execute(text("""
-                              UPDATE peldanyok
-                              SET aktiv = FALSE
-                              WHERE konyv_id = :id
-                              """), {"id": konyv_id})
+                UPDATE peldanyok
+                SET aktiv = FALSE
+                WHERE konyv_id = :id
+            """), {"id": konyv_id})
 
             # könyv soft delete
             conn.execute(text("""
-                              UPDATE konyvek
-                              SET torolt = TRUE
-                              WHERE id = :id
-                              """), {"id": konyv_id})
+                UPDATE konyvek
+                SET torolt = TRUE
+                WHERE id = :id
+            """), {"id": konyv_id})
 
             conn.commit()
 
