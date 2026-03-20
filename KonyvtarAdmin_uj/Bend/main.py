@@ -25,7 +25,8 @@ def hash_pw(pw):
 	return bcrypt.hash(pw)
 
 def verify_pw(pw, hashed):
-	return bcrypt.verify(pw[:72], hashed)
+    pw = hashlib.sha256(pw.encode()).hexdigest()
+    return bcrypt.verify(pw, hashed)
 
 # =====================
 # EMAIL
