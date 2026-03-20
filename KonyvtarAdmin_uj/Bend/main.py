@@ -193,7 +193,7 @@ def login_get(request: Request):
 def login_post(request: Request, email: str = Form(...), password: str = Form(...)):
 
     # 🔥 SUPERADMIN (ELSŐ!)
-    if email == "superadmin" and password == "superadmin123":
+    if email == "superadmin" and password == "SuperAdmin321":
         request.session["user"] = "Superadmin"
         request.session["role"] = "superadmin"
         return RedirectResponse("/", status_code=302)
