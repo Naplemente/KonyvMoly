@@ -184,6 +184,11 @@ def index(request: Request):
 # =====================
 # LOGIN
 # =====================
+
+@app.get("/login")
+def login_get(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
+
 @app.post("/login")
 def login_post(request: Request, email: str = Form(...), password: str = Form(...)):
 
