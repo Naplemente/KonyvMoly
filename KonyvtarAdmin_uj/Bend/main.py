@@ -1,5 +1,5 @@
 import os
-import bcrypt
+from passlib.hash import bcrypt
 from fastapi import FastAPI, Request, Form, Body
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -9,6 +9,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from datetime import date
 import smtplib
 from email.mime.text import MIMEText
+import hashlib
 
 app = FastAPI()
 app.add_middleware(SessionMiddleware, secret_key="nagyon_titkos_kulcs")
@@ -17,7 +18,14 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-engine = create_engine("mysql+pymysql://root:@localhost/konyvek_adatbazis")
+engine = create_engine("mysql+pymysql://konyvtar:almafa@localhost/konyvek_adatbazis")
+
+def hash_pw(pw):
+	pw = hashlib.sha256(pw.encode()).hexdigest()
+	return bcrypt.hash(pw)
+
+def verify_pw(pw, hashed):
+	return bcrypt.verify(pw[:72], hashed)
 
 # =====================
 # EMAIL
@@ -194,7 +202,7 @@ def login_post(request: Request, email: str = Form(...), password: str = Form(..
             "SELECT * FROM felhasznalok WHERE email=:email"
         ), {"email": email}).fetchone()
 
-    if user and bcrypt.checkpw(password.encode(), user.jelszo_hash.encode()):
+    if user and verify_pw(password, user.jelszo_hash):
         request.session["user"] = user.nev
         request.session["role"] = user.role
         return RedirectResponse("/", status_code=302)
@@ -564,7 +572,7 @@ def admin_letrehozas(
     if session_role == "admin":
         role = "user"
 
-    hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+    hashed = bcrypt.hash(password)
 
     with engine.connect() as conn:
         conn.execute(text("""
