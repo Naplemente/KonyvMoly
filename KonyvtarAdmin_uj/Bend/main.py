@@ -231,6 +231,8 @@ def logout(request: Request):
 # =====================
 @app.get("/konyvek")
 def konyvek_lista():
+    if not is_logged_in(request):
+        return RedirectResponse("/login", status_code=302)	
     with engine.connect() as conn:
         result = conn.execute(text("""
                                    SELECT k.id,
