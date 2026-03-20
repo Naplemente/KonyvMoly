@@ -21,11 +21,9 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 engine = create_engine("mysql+pymysql://konyvtar:almafa@localhost/konyvek_adatbazis")
 
 def hash_pw(pw):
-	pw = hashlib.sha256(pw.encode()).hexdigest()
 	return bcrypt.hash(pw)
 
 def verify_pw(pw, hashed):
-    pw = hashlib.sha256(pw.encode()).hexdigest()
     return bcrypt.verify(pw, hashed)
 
 # =====================
