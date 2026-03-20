@@ -185,27 +185,30 @@ def index(request: Request):
 # =====================
 # LOGIN
 # =====================
-@app.get("/login")
-def login_get(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
-
-
 @app.post("/login")
 def login_post(request: Request, email: str = Form(...), password: str = Form(...)):
+
+    # 🔥 SUPERADMIN (ELSŐ!)
     if email == "superadmin" and password == "superadmin123":
         request.session["user"] = "Superadmin"
         request.session["role"] = "superadmin"
         return RedirectResponse("/", status_code=302)
 
+    # 🔽 csak ezután DB
     with engine.connect() as conn:
         user = conn.execute(text(
             "SELECT * FROM felhasznalok WHERE email=:email"
         ), {"email": email}).fetchone()
 
-    if user and verify_pw(password, user.jelszo_hash):
-        request.session["user"] = user.nev
-        request.session["role"] = user.role
-        return RedirectResponse("/", status_code=302)
+    # 🔥 csak DB user megy bcrypt-re
+    if user:
+        try:
+            if verify_pw(password, user.jelszo_hash):
+                request.session["user"] = user.nev
+                request.session["role"] = user.role
+                return RedirectResponse("/", status_code=302)
+        except Exception as e:
+            print("VERIFY HIBA:", e)
 
     return templates.TemplateResponse("login.html", {"request": request, "error": True})
 
