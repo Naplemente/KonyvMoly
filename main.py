@@ -21,7 +21,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 engine = create_engine("mysql+pymysql://konyvtar:almafa@localhost/konyvek_adatbazis")
 
 def hash_pw(pw):
-	return bcrypt.hash(pw)
+    return bcrypt.hash(pw)
 
 def verify_pw(pw, hashed):
     return bcrypt.verify(pw, hashed)
@@ -91,9 +91,9 @@ def kuld_email(cim, konyv):
     msg["To"] = cim
 
     with smtplib.SMTP("smtp.gmail.com", 587) as server:
-    	server.starttls()
-    	server.login("konyvmolyadmin@gmail.com", "ggjy rnky dcqh pnos")
-    	server.send_message(msg)
+        server.starttls()
+        server.login("konyvmolyadmin@gmail.com", "ggjy rnky dcqh pnos")
+        server.send_message(msg)
 
 # =====================
 # ÉRTESÍTÉS
@@ -661,7 +661,7 @@ def admin_letrehozas(
         """), {"email": email}).fetchone()
 
         if existing:
-    	 return templates.TemplateResponse("adminok.html", {
+         return templates.TemplateResponse("adminok.html", {
           "request": request,
           "error": "Ez az email már létezik!"
     })
