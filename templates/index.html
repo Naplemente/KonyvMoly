@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/static/favicon.png">
+<title>Admin – Könyvkezelő</title>
+
+<style>
+body {
+    font-family: Arial;
+    margin: 40px;
+    background: #f4f6f8;
+}
+
+.card {
+    background: white;
+    padding: 20px;
+    margin-bottom: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+th, td {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    text-align: left;
+}
+
+th:last-child, td:last-child {
+    text-align: center;
+    width: 180px;
+}
+
+button {
+    padding: 6px 10px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-right: 5px;
+}
+
+.primary {
+    background: #3498db;
+    color: white;
+}
+
+.danger {
+    background: #e74c3c;
+    color: white;
+}
+
+.navbar {
+    background: #2c3e50;
+    color: white;
+    padding: 15px 25px;
+    display: flex;
+    justify-content: space-between;
+    margin: -40px -40px 30px -40px;
+}
+
+.navbar a {
+    color: white;
+    text-decoration: none;
+    padding: 6px 10px;
+    border-radius: 6px;
+    margin-left: 10px;
+}
+
+.logout {
+    background: #e74c3c;
+}
+
+.adminbtn {
+    background: #f39c12;
+}
+
+/* ROLE BADGE */
+.role {
+    margin-left: 10px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+}
+
+.role.admin { background: #f39c12; }
+.role.superadmin { background: #9b59b6; }
+
+/* HATÁRIDŐ SZÍNEK */
+.ok { background-color: #eafaf1; }
+.kozeli { background-color: #fff3cd; }
+.lejart { background-color: #f8d7da; }
+
+tr:hover { opacity: 0.9; }
+
+input, select {
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+}
+</style>
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<div class="navbar">
+    <div><strong>📚 Könyvkezelő Admin</strong></div>
+
+    <div>
+        Bejelentkezve:
+        <strong>{{ request.session.get('user') }}</strong>
+
+        <span class="role {{ request.session.get('role') }}">
+            {{ request.session.get('role') }}
+        </span>
+
+        {% if request.session.get("role") in ["admin", "superadmin"] %}
+        <a href="/adminok" class="adminbtn">Admin kezelő</a>
+        {% endif %}
+
+        <a href="/logout" class="logout">Kijelentkezés</a>
+    </div>
+</div>
+
+<!-- ÚJ KÖNYV -->
+<div class="card">
+<h2>Új könyv hozzáadása</h2>
+
+<form id="konyv-form" style="display:flex; gap:10px; flex-wrap:wrap;">
+    <input type="text" id="title" placeholder="Cím" required>
+    <input type="text" id="author" placeholder="Szerző" required>
+    <input type="number" id="year" placeholder="Év" required>
+    <button class="primary">Hozzáadás</button>
+</form>
+</div>
+
+<!-- KÖNYVEK -->
+<div class="card">
+<h2>Könyvek listája</h2>
+
+<input type="text" id="kereso" placeholder="Keresés..."
+style="width:100%;margin-bottom:10px;padding:8px">
+
+<table>
+<thead>
+<tr>
+    <th>Cím</th>
+    <th>Szerző</th>
+    <th>Év</th>
+    <th>Elérhető</th> <!-- ÚJ -->
+    <th>Művelet</th>
+</tr>
+</thead>
+
+<tbody id="konyv-lista"></tbody>
+</table>
+</div>
+
+<!-- KÖLCSÖNZÉS -->
+<div class="card">
+<h2>Kölcsönzés rögzítése</h2>
+
+<form id="kolcsonzes-form" style="display:flex; gap:10px; flex-wrap:wrap;">
+<select id="user" required>
+    <option value="">Felhasználó kiválasztása</option>
+</select>
+
+<select id="peldany" required>
+    <option value="">Példány kiválasztása</option>
+</select>
+
+<input type="date" id="hatarido" required>
+
+<button class="primary">Kölcsönzés</button>
+</form>
+</div>
+
+<!-- AKTÍV -->
+<div class="card">
+<h2>Aktív kölcsönzések</h2>
+
+<table>
+<thead>
+<tr>
+    <th>Könyv</th>
+    <th>Felhasználó</th>
+    <th>Kölcsönzés</th>
+    <th>Határidő</th>
+    <th>Művelet</th>
+</tr>
+</thead>
+
+<tbody id="kolcsonzes-lista"></tbody>
+</table>
+</div>
+
+<!-- HISTORY -->
+<div class="card">
+<h2>Előzmények</h2>
+
+<table>
+<thead>
+<tr>
+    <th>Könyv</th>
+    <th>Felhasználó</th>
+    <th>Kölcsönzés</th>
+    <th>Határidő</th>
+    <th>Visszahozva</th>
+</tr>
+</thead>
+
+<tbody id="history-lista"></tbody>
+</table>
+</div>
+
+<script src="/static/js/main.js"></script>
+
+</body>
+</html>

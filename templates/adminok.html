@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/static/favicon.png">
+<title>Admin kezelő</title>
+
+<style>
+body {
+    font-family: Arial;
+    margin: 0;
+    background: #f4f6f8;
+}
+
+/* NAVBAR */
+.navbar {
+    background: #2c3e50;
+    color: white;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.navbar-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.navbar a {
+    color: white;
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+}
+
+.navbar a:hover {
+    background: #1f2d3a;
+}
+
+.logout {
+    background: #e74c3c;
+}
+
+/* CONTENT */
+.container {
+    padding: 40px;
+}
+
+.card {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 30px;
+}
+
+/* TABLE */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+thead th {
+    background: #3498db;
+    color: white;
+    padding: 12px;
+    text-align: left;
+}
+
+tbody td {
+    padding: 12px;
+    border-bottom: 1px solid #ddd;
+}
+
+/* oszlop fix */
+th:last-child, td:last-child {
+    width: 150px;
+    text-align: center;
+}
+
+/* BUTTON */
+button {
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.danger {
+    background: #e74c3c;
+    color: white;
+}
+
+/* FORM */
+.form-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 15px;
+}
+
+input, select {
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+}
+
+/* SUCCESS */
+.success {
+    background: #d4edda;
+    color: #155724;
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="navbar">
+    <div>🛡️ Admin kezelő panel</div>
+
+    <div class="navbar-right">
+        <span>
+            Bejelentkezve:
+            <strong>{{ request.session.get("user") }}</strong>
+        </span>
+
+        <a href="/">Dashboard</a>
+        <a href="/logout" class="logout">Kijelentkezés</a>
+    </div>
+</div>
+
+<div class="container">
+
+<h1>Admin felület</h1>
+
+{% if success %}
+<div class="success">✔ {{ success }}</div>
+{% endif %}
+
+<div class="card">
+<h2>Fiókok listája</h2>
+
+<table>
+<thead>
+<tr>
+    <th>Név</th>
+    <th>Szerepkör</th>
+    <th>Művelet</th>
+</tr>
+</thead>
+
+<tbody>
+{% for admin in adminok %}
+<tr>
+
+<td>{{ admin.nev }}</td>
+
+<td>
+    {% if admin.role == "admin" %}
+        <span style="color:#e67e22; font-weight:bold;">Admin</span>
+    {% else %}
+        <span style="color:#3498db;">Felhasználó</span>
+    {% endif %}
+</td>
+
+<td>
+    {% if request.session.get("role") == "superadmin" or admin.role == "user" %}
+       <form method="post" action="/admin-torles/{{ admin.id }}">
+            <button class="danger"
+                onclick="return confirm('Biztosan törlöd?')">
+                Törlés
+            </button>
+        </form>
+    {% else %}
+        <span style="color:#999;">Nincs jogosultság</span>
+    {% endif %}
+</td>
+
+</tr>
+{% endfor %}
+</tbody>
+</table>
+
+</div>
+
+<div class="card">
+<h2>Új fiók létrehozása</h2>
+{% if error %}
+    <p style="color:red;">{{ error }}</p>
+{% endif %}
+<form method="post" action="/admin-letrehozas">
+<div class="form-row">
+
+<input type="text" name="nev" placeholder="Felhasználónév" required>
+<input type="email" name="email" placeholder="Email" required>
+<input type="password" name="password" placeholder="Jelszó" required>
+
+{% if request.session.get("role") == "superadmin" %}
+<select name="role">
+    <option value="user">Felhasználó</option>
+    <option value="admin">Admin</option>
+</select>
+{% else %}
+<input type="hidden" name="role" value="user">
+{% endif %}
+
+<button class="primary">Létrehozás</button>
+
+</div>
+</form>
+
+</div>
+
+</div>
+
+</body>
+</html>
