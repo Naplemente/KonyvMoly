@@ -656,12 +656,12 @@ def admin_letrehozas(
         role = "user"
 
     with engine.connect() as conn:
-    existing = conn.execute(text("""
+        existing = conn.execute(text("""
         SELECT id FROM felhasznalok WHERE email = :email
-    """), {"email": email}).fetchone()
-
-    if existing:
-        adminok = conn.execute(text("""
+        """), {"email": email}).fetchone()
+        
+        if existing:
+            adminok = conn.execute(text("""
             SELECT id, nev, role
             FROM felhasznalok
             WHERE torolt = FALSE
@@ -673,9 +673,9 @@ def admin_letrehozas(
             "adminok": adminok
         })
 
-    hashed = bcrypt.hash(password)
+        hashed = bcrypt.hash(password)
 
-    conn.execute(text("""
+        conn.execute(text("""
         INSERT INTO felhasznalok
         (nev, email, jelszo_hash, regisztracio_datuma, role, torolt)
         VALUES (:nev, :email, :hash, NOW(), :role, FALSE)
