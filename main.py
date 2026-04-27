@@ -663,17 +663,17 @@ def admin_letrehozas(
 """), {"email": email}).fetchone()
 
     if existing:
-    adminok = conn.execute(text("""
+        adminok = conn.execute(text("""
         SELECT id, nev, role
         FROM felhasznalok
         WHERE torolt = FALSE
     """)).fetchall()
 
-    return templates.TemplateResponse("adminok.html", {
-        "request": request,
-        "error": "Ez az email már létezik!",
-        "adminok": adminok
-    })
+        return templates.TemplateResponse("adminok.html", {
+            "request": request,
+            "error": "Ez az email már létezik!",
+            "adminok": adminok
+        })
 
 
 hashed = bcrypt.hash(password)
