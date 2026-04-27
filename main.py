@@ -656,18 +656,16 @@ def admin_letrehozas(
         role = "user"
 
     with engine.connect() as conn:
-
-        # 🔥 IDE JÖN AZ ELLENŐRZÉS
-        existing = conn.execute(text("""
-    SELECT id FROM felhasznalok WHERE email = :email
-"""), {"email": email}).fetchone()
+    existing = conn.execute(text("""
+        SELECT id FROM felhasznalok WHERE email = :email
+    """), {"email": email}).fetchone()
 
     if existing:
         adminok = conn.execute(text("""
-        SELECT id, nev, role
-        FROM felhasznalok
-        WHERE torolt = FALSE
-    """)).fetchall()
+            SELECT id, nev, role
+            FROM felhasznalok
+            WHERE torolt = FALSE
+        """)).fetchall()
 
         return templates.TemplateResponse("adminok.html", {
             "request": request,
@@ -675,21 +673,20 @@ def admin_letrehozas(
             "adminok": adminok
         })
 
+    hashed = bcrypt.hash(password)
 
-hashed = bcrypt.hash(password)
+    conn.execute(text("""
+        INSERT INTO felhasznalok
+        (nev, email, jelszo_hash, regisztracio_datuma, role, torolt)
+        VALUES (:nev, :email, :hash, NOW(), :role, FALSE)
+    """), {
+        "nev": nev,
+        "email": email,
+        "hash": hashed,
+        "role": role
+    })
 
-conn.execute(text("""
-    INSERT INTO felhasznalok
-    (nev, email, jelszo_hash, regisztracio_datuma, role, torolt)
-    VALUES (:nev, :email, :hash, NOW(), :role, FALSE)
-"""), {
-    "nev": nev,
-    "email": email,
-    "hash": hashed,
-    "role": role
-})
-
-conn.commit()
+    conn.commit()
 
 return RedirectResponse("/adminok?success=1", status_code=302)
 
