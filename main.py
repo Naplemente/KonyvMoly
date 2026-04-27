@@ -785,15 +785,17 @@ def toplista(request: Request):
     ]
 
      
-        conn.execute(text("""
-            UPDATE felhasznalok
-            SET jelszo_hash = :hash,
-                reset_token = NULL,
-                reset_expiry = NULL
-            WHERE id = :id
-        """), {"hash": hashed, "id": user.id})
+conn.execute(text("""
+    UPDATE felhasznalok
+    SET jelszo_hash = :hash,
+        reset_token = NULL,
+        reset_expiry = NULL
+    WHERE id = :id
+"""), {"hash": hashed, "id": user.id})
 
-        conn.commit()
+conn.commit()
+
+return RedirectResponse("/login", status_code=302)
 
     return RedirectResponse("/login", status_code=302)
 
