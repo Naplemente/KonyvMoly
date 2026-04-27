@@ -788,7 +788,7 @@ def toplista(request: Request):
     ]
 
  @app.post("/forgot-password")
-def forgot_password(email: str = Form(...)):
+def forgot_password(request: Request, email: str = Form(...)):
     with engine.connect() as conn:
         user = conn.execute(text("""
             SELECT id FROM felhasznalok
@@ -796,6 +796,9 @@ def forgot_password(email: str = Form(...)):
         """), {"email": email}).fetchone()
 
         if user:
+            import secrets
+            from datetime import datetime, timedelta
+
             token = secrets.token_urlsafe(32)
             expiry = datetime.utcnow() + timedelta(hours=1)
 
@@ -811,8 +814,11 @@ def forgot_password(email: str = Form(...)):
 
             kuld_email(email, f"Jelszó visszaállítás: {link}")
 
-    return {"message": "Ha létezik az email, küldtünk linket"}
-
+    return templates.TemplateResponse("forgot.html", {
+        "request": request,
+        "message": "Ha létezik az email, küldtünk linket"
+    })
+    
     @app.get("/reset-password")
 def reset_form(request: Request, token: str):
     return templates.TemplateResponse("reset.html", {
@@ -821,7 +827,10 @@ def reset_form(request: Request, token: str):
     })
 
     @app.post("/reset-password")
-def reset_password(token: str = Form(...), password: str = Form(...)):
+def reset_password(request: Request,
+                   token: str = Form(...),
+                   password: str = Form(...)):
+
     with engine.connect() as conn:
         user = conn.execute(text("""
             SELECT id FROM felhasznalok
@@ -830,7 +839,24 @@ def reset_password(token: str = Form(...), password: str = Form(...)):
         """), {"token": token}).fetchone()
 
         if not user:
-            return {"error": "Érvénytelen vagy lejárt link"}
+            return templates.TemplateResponse("reset.html", {
+                "request": request,
+                "error": "Lejárt vagy hibás link"
+            })
+
+        hashed = bcrypt.hash(password)
+
+        conn.execute(text("""
+            UPDATE felhasznalok
+            SET jelszo_hash = :hash,
+                reset_token = NULL,
+                reset_expiry = NULL
+            WHERE id = :id
+        """), {"hash": hashed, "id": user.id})
+
+        conn.commit()
+
+    return RedirectResponse("/login", status_code=302)
 
         hashed = bcrypt.hash(password)
 
