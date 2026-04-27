@@ -663,33 +663,33 @@ def admin_letrehozas(
 """), {"email": email}).fetchone()
 
     if existing:
-        adminok = conn.execute(text("""
+    adminok = conn.execute(text("""
         SELECT id, nev, role
         FROM felhasznalok
         WHERE torolt = FALSE
-        """)).fetchall()
+    """)).fetchall()
 
-        return templates.TemplateResponse("adminok.html", {
-         "request": request,
-         "error": "Ez az email már létezik!",
-         "adminok": adminok
+    return templates.TemplateResponse("adminok.html", {
+        "request": request,
+        "error": "Ez az email már létezik!",
+        "adminok": adminok
     })
 
-        # 🔥 CSAK EZUTÁN INSERT
-        hashed = bcrypt.hash(password)
 
-        conn.execute(text("""
-            INSERT INTO felhasznalok
-                (nev, email, jelszo_hash, regisztracio_datuma, role, torolt)
-            VALUES (:nev, :email, :hash, NOW(), :role, FALSE)
-        """), {
-            "nev": nev,
-            "email": email,
-            "hash": hashed,
-            "role": role
-        })
+hashed = bcrypt.hash(password)
 
-        conn.commit()
+conn.execute(text("""
+    INSERT INTO felhasznalok
+    (nev, email, jelszo_hash, regisztracio_datuma, role, torolt)
+    VALUES (:nev, :email, :hash, NOW(), :role, FALSE)
+"""), {
+    "nev": nev,
+    "email": email,
+    "hash": hashed,
+    "role": role
+})
+
+conn.commit()
 
     return RedirectResponse("/adminok?success=1", status_code=302)
 
@@ -903,7 +903,7 @@ def reset_password(request: Request,
                 "error": "Lejárt vagy hibás link"
             })
 
-        hashed = bcrypt.hash(password)
+        
 
         conn.execute(text("""
             UPDATE felhasznalok
