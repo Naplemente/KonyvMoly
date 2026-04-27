@@ -13,9 +13,6 @@ import hashlib
 import secrets
 from datetime import datetime, timedelta
 
-token = secrets.token_urlsafe(32)
-expiry = datetime.utcnow() + timedelta(hours=1)
-
 app = FastAPI()
 app.add_middleware(SessionMiddleware, secret_key="nagyon_titkos_kulcs")
 
@@ -662,10 +659,10 @@ def admin_letrehozas(
 
         # 🔥 IDE JÖN AZ ELLENŐRZÉS
         existing = conn.execute(text("""
-            SELECT id FROM felhasznalok WHERE email = :email
-        """), {"email": email}).fetchone()
+    SELECT id FROM felhasznalok WHERE email = :email
+"""), {"email": email}).fetchone()
 
-        if existing:
+if existing:
     adminok = conn.execute(text("""
         SELECT id, nev, role
         FROM felhasznalok
@@ -787,63 +784,6 @@ def toplista(request: Request):
         for r in result
     ]
 
- @app.post("/forgot-password")
-def forgot_password(request: Request, email: str = Form(...)):
-    with engine.connect() as conn:
-        user = conn.execute(text("""
-            SELECT id FROM felhasznalok
-            WHERE email = :email AND torolt = FALSE
-        """), {"email": email}).fetchone()
-
-        if user:
-            import secrets
-            from datetime import datetime, timedelta
-
-            token = secrets.token_urlsafe(32)
-            expiry = datetime.utcnow() + timedelta(hours=1)
-
-            conn.execute(text("""
-                UPDATE felhasznalok
-                SET reset_token = :token,
-                    reset_expiry = :expiry
-                WHERE email = :email
-            """), {"token": token, "expiry": expiry, "email": email})
-            conn.commit()
-
-            link = f"https://murkoff.org/reset-password?token={token}"
-
-            kuld_email(email, f"Jelszó visszaállítás: {link}")
-
-    return templates.TemplateResponse("forgot.html", {
-        "request": request,
-        "message": "Ha létezik az email, küldtünk linket"
-    })
-    
-    @app.get("/reset-password")
-def reset_form(request: Request, token: str):
-    return templates.TemplateResponse("reset.html", {
-        "request": request,
-        "token": token
-    })
-
-    @app.post("/reset-password")
-def reset_password(request: Request,
-                   token: str = Form(...),
-                   password: str = Form(...)):
-
-    with engine.connect() as conn:
-        user = conn.execute(text("""
-            SELECT id FROM felhasznalok
-            WHERE reset_token = :token
-            AND reset_expiry > NOW()
-        """), {"token": token}).fetchone()
-
-        if not user:
-            return templates.TemplateResponse("reset.html", {
-                "request": request,
-                "error": "Lejárt vagy hibás link"
-            })
-
         hashed = bcrypt.hash(password)
 
         conn.execute(text("""
@@ -916,4 +856,78 @@ def konyv_torles(request: Request, konyv_id: int):
         print("HIBA:", e)
         return {"message": "Szerver hiba történt!"}
 
-       
+       @app.get("/forgot-password")
+def forgot_page(request: Request):
+    return templates.TemplateResponse("forgot.html", {
+        "request": request
+    })
+
+
+@app.post("/forgot-password")
+def forgot_password(request: Request, email: str = Form(...)):
+    with engine.connect() as conn:
+        user = conn.execute(text("""
+            SELECT id FROM felhasznalok
+            WHERE email = :email AND torolt = FALSE
+        """), {"email": email}).fetchone()
+
+        if user:
+            token = secrets.token_urlsafe(32)
+            expiry = datetime.utcnow() + timedelta(hours=1)
+
+            conn.execute(text("""
+                UPDATE felhasznalok
+                SET reset_token = :token,
+                    reset_expiry = :expiry
+                WHERE email = :email
+            """), {"token": token, "expiry": expiry, "email": email})
+            conn.commit()
+
+            link = f"https://murkoff.org/reset-password?token={token}"
+            kuld_email(email, link)
+
+    return templates.TemplateResponse("forgot.html", {
+        "request": request,
+        "message": "Ha létezik az email, küldtünk linket"
+    })
+
+
+@app.get("/reset-password")
+def reset_form(request: Request, token: str):
+    return templates.TemplateResponse("reset.html", {
+        "request": request,
+        "token": token
+    })
+
+
+@app.post("/reset-password")
+def reset_password(request: Request,
+                   token: str = Form(...),
+                   password: str = Form(...)):
+
+    with engine.connect() as conn:
+        user = conn.execute(text("""
+            SELECT id FROM felhasznalok
+            WHERE reset_token = :token
+            AND reset_expiry > NOW()
+        """), {"token": token}).fetchone()
+
+        if not user:
+            return templates.TemplateResponse("reset.html", {
+                "request": request,
+                "error": "Lejárt vagy hibás link"
+            })
+
+        hashed = bcrypt.hash(password)
+
+        conn.execute(text("""
+            UPDATE felhasznalok
+            SET jelszo_hash = :hash,
+                reset_token = NULL,
+                reset_expiry = NULL
+            WHERE id = :id
+        """), {"hash": hashed, "id": user.id})
+
+        conn.commit()
+
+    return RedirectResponse("/login", status_code=302)
