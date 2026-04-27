@@ -691,7 +691,7 @@ conn.execute(text("""
 
 conn.commit()
 
-    return RedirectResponse("/adminok?success=1", status_code=302)
+return RedirectResponse("/adminok?success=1", status_code=302)
 
 
 # =====================
