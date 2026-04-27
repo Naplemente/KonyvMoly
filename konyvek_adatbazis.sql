@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Gép: 127.0.0.1
--- Létrehozás ideje: 2026. Már 20. 08:38
+-- Létrehozás ideje: 2026. Ápr 27. 12:27
 -- Kiszolgáló verziója: 10.4.32-MariaDB
 -- PHP verzió: 8.2.12
 
@@ -20,6 +20,8 @@ SET time_zone = "+00:00";
 --
 -- Adatbázis: `konyvek_adatbazis`
 --
+CREATE DATABASE IF NOT EXISTS `konyvek_adatbazis` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_hungarian_ci;
+USE `konyvek_adatbazis`;
 
 -- --------------------------------------------------------
 
@@ -72,21 +74,23 @@ CREATE TABLE `felhasznalok` (
   `regisztracio_datuma` datetime DEFAULT current_timestamp(),
   `role` enum('user','admin','superadmin') DEFAULT 'user',
   `torolt` tinyint(1) DEFAULT 0,
-  `score` int(11) DEFAULT 0
+  `score` int(11) DEFAULT 0,
+  `reset_token` varchar(255) DEFAULT NULL,
+  `reset_expiry` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- A tábla adatainak kiíratása `felhasznalok`
 --
 
-INSERT INTO `felhasznalok` (`id`, `nev`, `email`, `jelszo_hash`, `regisztracio_datuma`, `role`, `torolt`, `score`) VALUES
-(2, 'Teszt Felhasználó', 'teszt@teszt.hu', '123', '2026-03-16 13:28:34', 'user', 1, 0),
-(5, 'admin', 'admin@gmail.com', '$2b$12$GIcjq0zfQaMB/8X.rXoKSOZzlvYquiLoT2JemmarWw6L1py1fsjZe', '2026-03-18 10:08:43', 'admin', 0, 0),
-(6, 'Vég Béla', 'veg.bela@gmail.com', '$2b$12$0I9vUV1weeOyk95rUX0zVOp50cU0aK/QMUb/F7MfBwjdAaS1kQgEi', '2026-03-18 10:09:11', 'user', 0, 0),
-(7, 'pamkutya', 'pama@gmail.com', '$2b$12$vVrhrg/SZMIpYanqbFzEKOtgwC087lvQKaMVhtHS/FPuAnd6Dcz/S', '2026-03-18 13:08:29', 'user', 0, 0),
-(8, 'asd', 'asd@gmail.com', '$2b$12$62wKVnjrmxMVQ1ijxxJAiODK8.PtCKYvh5hiKu.indz/3f.8BfeTy', '2026-03-18 13:08:43', 'user', 0, 0),
-(9, 'Naplemente', 'friedlevente78@gmail.com', '$2b$12$pT71GI/cqC2Y/ffYe31v8eU1GcELNxgMaVb7ewYl6rYWPOekCEQKu', '2026-03-18 14:56:17', 'user', 0, 0),
-(11, 'atypaty', 'tirolpatrik2007@gmail.com', '$2b$12$shmKynHMstfeS52ILQ3ElOS1UURuf9VtsVuIJqRFHCKT4DLduOfUq', '2026-03-18 15:10:48', 'user', 0, 14);
+INSERT INTO `felhasznalok` (`id`, `nev`, `email`, `jelszo_hash`, `regisztracio_datuma`, `role`, `torolt`, `score`, `reset_token`, `reset_expiry`) VALUES
+(2, 'Teszt Felhasználó', 'teszt@teszt.hu', '123', '2026-03-16 13:28:34', 'user', 1, 0, NULL, NULL),
+(5, 'admin', 'admin@gmail.com', '$2b$12$GIcjq0zfQaMB/8X.rXoKSOZzlvYquiLoT2JemmarWw6L1py1fsjZe', '2026-03-18 10:08:43', 'admin', 0, 0, NULL, NULL),
+(6, 'Vég Béla', 'veg.bela@gmail.com', '$2b$12$0I9vUV1weeOyk95rUX0zVOp50cU0aK/QMUb/F7MfBwjdAaS1kQgEi', '2026-03-18 10:09:11', 'user', 0, 0, NULL, NULL),
+(7, 'pamkutya', 'pama@gmail.com', '$2b$12$vVrhrg/SZMIpYanqbFzEKOtgwC087lvQKaMVhtHS/FPuAnd6Dcz/S', '2026-03-18 13:08:29', 'user', 0, 0, NULL, NULL),
+(8, 'asd', 'asd@gmail.com', '$2b$12$62wKVnjrmxMVQ1ijxxJAiODK8.PtCKYvh5hiKu.indz/3f.8BfeTy', '2026-03-18 13:08:43', 'user', 0, 0, NULL, NULL),
+(9, 'Naplemente', 'friedlevente78@gmail.com', '$2b$12$pT71GI/cqC2Y/ffYe31v8eU1GcELNxgMaVb7ewYl6rYWPOekCEQKu', '2026-03-18 14:56:17', 'user', 0, 0, NULL, NULL),
+(11, 'atypaty', 'tirolpatrik2007@gmail.com', '$2b$12$shmKynHMstfeS52ILQ3ElOS1UURuf9VtsVuIJqRFHCKT4DLduOfUq', '2026-03-18 15:10:48', 'user', 0, 14, NULL, NULL);
 
 -- --------------------------------------------------------
 
