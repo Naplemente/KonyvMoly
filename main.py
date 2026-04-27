@@ -662,17 +662,17 @@ def admin_letrehozas(
     SELECT id FROM felhasznalok WHERE email = :email
 """), {"email": email}).fetchone()
 
-if existing:
-    adminok = conn.execute(text("""
+    if existing:
+        adminok = conn.execute(text("""
         SELECT id, nev, role
         FROM felhasznalok
         WHERE torolt = FALSE
-    """)).fetchall()
+        """)).fetchall()
 
-    return templates.TemplateResponse("adminok.html", {
-        "request": request,
-        "error": "Ez az email már létezik!",
-        "adminok": adminok
+        return templates.TemplateResponse("adminok.html", {
+         "request": request,
+         "error": "Ez az email már létezik!",
+         "adminok": adminok
     })
 
         # 🔥 CSAK EZUTÁN INSERT
@@ -784,8 +784,7 @@ def toplista(request: Request):
         for r in result
     ]
 
-        hashed = bcrypt.hash(password)
-
+     
         conn.execute(text("""
             UPDATE felhasznalok
             SET jelszo_hash = :hash,
@@ -798,21 +797,7 @@ def toplista(request: Request):
 
     return RedirectResponse("/login", status_code=302)
 
-        hashed = bcrypt.hash(password)
-
-        conn.execute(text("""
-            UPDATE felhasznalok
-            SET jelszo_hash = :hash,
-                reset_token = NULL,
-                reset_expiry = NULL
-            WHERE id = :id
-        """), {"hash": hashed, "id": user.id})
-        conn.commit()
-
-    return {"message": "Jelszó frissítve"}
-
-# =====================
-# KÖNYV TÖRLÉS (SOFT DELETE)
+KÖNYV TÖRLÉS (SOFT DELETE)
 # =====================
 @app.delete("/konyv-torles/{konyv_id}")
 def konyv_torles(request: Request, konyv_id: int):
