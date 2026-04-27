@@ -1,17 +1,139 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hu">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+<meta charset="UTF-8">
+<title>Elfelejtett jelszó</title>
+
+<style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+body {
+    height: 100vh;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* CARD */
+.box {
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(15px);
+    padding: 35px;
+    border-radius: 16px;
+    width: 360px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    animation: fadeIn 0.5s ease;
+}
+
+/* ANIM */
+@keyframes fadeIn {
+    from {opacity:0; transform: translateY(20px);}
+    to {opacity:1; transform: translateY(0);}
+}
+
+h2 {
+    color: white;
+    margin-bottom: 20px;
+}
+
+/* INPUT */
+input {
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    border-radius: 8px;
+    border: none;
+    outline: none;
+    background: rgba(255,255,255,0.2);
+    color: white;
+    transition: 0.2s;
+}
+
+input::placeholder {
+    color: rgba(255,255,255,0.7);
+}
+
+input:focus {
+    background: rgba(255,255,255,0.3);
+}
+
+/* BUTTON */
+button {
+    margin-top: 15px;
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background: #00c6ff;
+    background: linear-gradient(90deg, #00c6ff, #0072ff);
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+button:hover {
+    transform: scale(1.03);
+}
+
+/* MESSAGE */
+p {
+    margin-top: 15px;
+    color: #dff9fb;
+    font-size: 14px;
+}
+
+/* LINK */
+a {
+    display: block;
+    margin-top: 20px;
+    color: #00c6ff;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* COPYRIGHT */
+.footer {
+    position: fixed;
+    bottom: 10px;
+    right: 15px;
+    color: rgba(255,255,255,0.6);
+    font-size: 12px;
+}
+</style>
+
 </head>
 <body>
-    <form method="post" action="/forgot-password">
-    <h2>Jelszó visszaállítás</h2>
 
-    <input type="email" name="email" placeholder="Email" required>
+<div class="box">
+    <h2>Elfelejtett jelszó</h2>
 
-    <button type="submit">Küldés</button>
-</form>
+    <form method="post">
+        <input type="email" name="email" placeholder="Email cím" required>
+        <button type="submit">Jelszó visszaállítás</button>
+    </form>
+
+    {% if message %}
+        <p>{{ message }}</p>
+    {% endif %}
+
+    <a href="/login">← Vissza a bejelentkezéshez</a>
+</div>
+
+<div class="footer">
+    © 2026 KönyvMoly
+</div>
+
 </body>
 </html>
