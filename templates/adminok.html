@@ -8,13 +8,14 @@
 <style>
 :root {
     --bg: #0f172a;
-    --card: #111827;
+    --card: rgba(17, 24, 39, 0.85);
     --accent: #3b82f6;
     --text: #e5e7eb;
     --muted: #9ca3af;
     --danger: #ef4444;
 }
 
+/* RESET */
 * { margin:0; padding:0; box-sizing:border-box; }
 
 body {
@@ -27,17 +28,46 @@ body {
 .navbar {
     display:flex;
     justify-content:space-between;
+    align-items:center;
     padding:15px 30px;
     background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(8px);
+}
+
+.navbar div:first-child {
+    font-weight:600;
+    font-size:18px;
+}
+
+.navbar-right {
+    display:flex;
+    align-items:center;
+    gap:15px;
+}
+
+.navbar-right span {
+    background: rgba(255,255,255,0.05);
+    padding:6px 10px;
+    border-radius:8px;
+    color:var(--muted);
+    font-size:14px;
 }
 
 .navbar a {
     color: var(--muted);
-    margin-left: 10px;
     text-decoration:none;
+    transition:0.2s;
 }
 
 .navbar a:hover { color:white; }
+
+.logout {
+    color: var(--danger);
+}
+
+.logout:hover {
+    color: #f87171;
+}
 
 /* LAYOUT */
 .container {
@@ -49,36 +79,95 @@ body {
 /* CARD */
 .card {
     background: var(--card);
-    padding:20px;
-    border-radius:12px;
+    backdrop-filter: blur(12px);
+    padding:25px;
+    border-radius:14px;
+    margin-bottom:25px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+/* HEADINGS */
+h1 {
     margin-bottom:20px;
+}
+
+h2 {
+    margin-bottom:15px;
 }
 
 /* INPUT */
 input, select {
     padding:10px;
-    border-radius:6px;
+    border-radius:8px;
     border:none;
     background:#1f2937;
     color:white;
+    margin-right:10px;
 }
 
 /* BUTTON */
 button {
     padding:10px 15px;
     border:none;
-    border-radius:6px;
+    border-radius:8px;
     background: var(--accent);
     color:white;
     cursor:pointer;
+    transition:0.2s;
 }
 
 button:hover { opacity:0.9; }
 
+/* DANGER BUTTON */
+.danger {
+    background: var(--danger);
+}
+
 /* TABLE */
-table { width:100%; border-collapse: collapse; }
-td, th { padding:10px; }
-tr { border-bottom:1px solid #333; }
+table { 
+    width:100%; 
+    border-collapse: collapse; 
+}
+
+td, th { 
+    padding:12px; 
+    text-align:left;
+}
+
+tr { 
+    border-bottom:1px solid rgba(255,255,255,0.08); 
+}
+
+/* BADGE */
+.badge-admin {
+    color: #f59e0b;
+    font-weight:bold;
+}
+
+.badge-user {
+    color: #60a5fa;
+}
+
+/* ALERT */
+.success {
+    background: rgba(34,197,94,0.2);
+    padding:10px;
+    border-radius:8px;
+    margin-bottom:15px;
+}
+
+.error {
+    color: #f87171;
+    margin-bottom:10px;
+}
+
+/* FORM */
+.form-row {
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-top:10px;
+}
 
 /* FOOTER */
 .footer {
@@ -86,7 +175,6 @@ tr { border-bottom:1px solid #333; }
     padding:20px;
     color:var(--muted);
 }
-    
 </style>
 </head>
 
@@ -97,8 +185,7 @@ tr { border-bottom:1px solid #333; }
 
     <div class="navbar-right">
         <span>
-            Bejelentkezve:
-            <strong>{{ request.session.get("user") }}</strong>
+            {{ request.session.get("user") }}
         </span>
 
         <a href="/">Dashboard</a>
@@ -134,22 +221,22 @@ tr { border-bottom:1px solid #333; }
 
 <td>
     {% if admin.role == "admin" %}
-        <span style="color:#e67e22; font-weight:bold;">Admin</span>
+        <span class="badge-admin">Admin</span>
     {% else %}
-        <span style="color:#3498db;">Felhasználó</span>
+        <span class="badge-user">Felhasználó</span>
     {% endif %}
 </td>
 
 <td>
     {% if request.session.get("role") == "superadmin" or admin.role == "user" %}
-       <form method="post" action="/admin-torles/{{ admin.id }}">
+        <form method="post" action="/admin-torles/{{ admin.id }}">
             <button class="danger"
                 onclick="return confirm('Biztosan törlöd?')">
                 Törlés
             </button>
         </form>
     {% else %}
-        <span style="color:#999;">Nincs jogosultság</span>
+        <span style="color:#777;">Nincs jogosultság</span>
     {% endif %}
 </td>
 
@@ -157,17 +244,18 @@ tr { border-bottom:1px solid #333; }
 {% endfor %}
 </tbody>
 </table>
-
 </div>
 
 <div class="card">
 <h2>Új fiók létrehozása</h2>
-{% if error %}
-    <p style="color:red;">{{ error }}</p>
-{% endif %}
-<form method="post" action="/admin-letrehozas">
-<div class="form-row">
 
+{% if error %}
+<p class="error">{{ error }}</p>
+{% endif %}
+
+<form method="post" action="/admin-letrehozas">
+
+<div class="form-row">
 <input type="text" name="nev" placeholder="Felhasználónév" required>
 <input type="email" name="email" placeholder="Email" required>
 <input type="password" name="password" placeholder="Jelszó" required>
@@ -181,16 +269,17 @@ tr { border-bottom:1px solid #333; }
 <input type="hidden" name="role" value="user">
 {% endif %}
 
-<button class="primary">Létrehozás</button>
-
+<button>Létrehozás</button>
 </div>
+
 </form>
-
 </div>
 
 </div>
+
 <footer class="footer">
     © 2026 Murkoff Corporation
 </footer>
+
 </body>
 </html>
