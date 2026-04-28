@@ -19,7 +19,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-engine = create_engine("mysql+pymysql://konyvtar:almafa@localhost/konyvek_adatbazis")
+engine = create_engine("mysql+pymysql://konyvtar:almafa@127.0.0.1/konyvek_adatbazis")
 
 
 def hash_pw(pw: str) -> str:
