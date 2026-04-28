@@ -5,31 +5,37 @@
 <title>Elfelejtett jelszó</title>
 
 <style>
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    font-family: 'Segoe UI', sans-serif;
+:root {
+    --bg: #0f172a;
+    --card: rgba(17, 24, 39, 0.85);
+    --accent: #3b82f6;
+    --text: #e5e7eb;
+    --muted: #9ca3af;
 }
 
+/* RESET */
+* { margin:0; padding:0; box-sizing:border-box; }
+
 body {
+    font-family: system-ui;
     height: 100vh;
-    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    background: radial-gradient(circle at top, #1e293b, #020617);
     display: flex;
     justify-content: center;
     align-items: center;
+    color: var(--text);
 }
 
 /* CARD */
 .box {
-    background: rgba(255,255,255,0.1);
-    backdrop-filter: blur(15px);
+    background: var(--card);
+    backdrop-filter: blur(12px);
     padding: 35px;
     border-radius: 16px;
     width: 360px;
     text-align: center;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-    animation: fadeIn 0.5s ease;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    animation: fadeIn 0.4s ease;
 }
 
 /* ANIM */
@@ -38,8 +44,8 @@ body {
     to {opacity:1; transform: translateY(0);}
 }
 
+/* TITLE */
 h2 {
-    color: white;
     margin-bottom: 20px;
 }
 
@@ -50,18 +56,8 @@ input {
     margin-top: 10px;
     border-radius: 8px;
     border: none;
-    outline: none;
-    background: rgba(255,255,255,0.2);
+    background: #1f2937;
     color: white;
-    transition: 0.2s;
-}
-
-input::placeholder {
-    color: rgba(255,255,255,0.7);
-}
-
-input:focus {
-    background: rgba(255,255,255,0.3);
 }
 
 /* BUTTON */
@@ -71,8 +67,7 @@ button {
     padding: 12px;
     border: none;
     border-radius: 8px;
-    background: #00c6ff;
-    background: linear-gradient(90deg, #00c6ff, #0072ff);
+    background: var(--accent);
     color: white;
     font-weight: bold;
     cursor: pointer;
@@ -80,13 +75,13 @@ button {
 }
 
 button:hover {
-    transform: scale(1.03);
+    opacity: 0.9;
 }
 
 /* MESSAGE */
 p {
     margin-top: 15px;
-    color: #dff9fb;
+    color: #a5f3fc;
     font-size: 14px;
 }
 
@@ -94,21 +89,21 @@ p {
 a {
     display: block;
     margin-top: 20px;
-    color: #00c6ff;
+    color: var(--muted);
     text-decoration: none;
     font-size: 14px;
 }
 
 a:hover {
-    text-decoration: underline;
+    color: white;
 }
 
-/* COPYRIGHT */
+/* FOOTER */
 .footer {
     position: fixed;
     bottom: 10px;
     right: 15px;
-    color: rgba(255,255,255,0.6);
+    color: var(--muted);
     font-size: 12px;
 }
 </style>
