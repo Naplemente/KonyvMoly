@@ -6,122 +6,85 @@
 <title>Admin kezelő</title>
 
 <style>
+:root {
+    --bg: #0f172a;
+    --card: #111827;
+    --accent: #3b82f6;
+    --text: #e5e7eb;
+    --muted: #9ca3af;
+    --danger: #ef4444;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
 body {
-    font-family: Arial;
-    margin: 0;
-    background: #f4f6f8;
+    font-family: system-ui;
+    background: radial-gradient(circle at top, #1e293b, #020617);
+    color: var(--text);
 }
 
 /* NAVBAR */
 .navbar {
-    background: #2c3e50;
-    color: white;
-    padding: 15px 30px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.navbar-right {
-    display: flex;
-    align-items: center;
-    gap: 15px;
+    display:flex;
+    justify-content:space-between;
+    padding:15px 30px;
+    background: rgba(0,0,0,0.4);
 }
 
 .navbar a {
-    color: white;
-    text-decoration: none;
-    padding: 6px 12px;
-    border-radius: 6px;
+    color: var(--muted);
+    margin-left: 10px;
+    text-decoration:none;
 }
 
-.navbar a:hover {
-    background: #1f2d3a;
-}
+.navbar a:hover { color:white; }
 
-.logout {
-    background: #e74c3c;
-}
-
-/* CONTENT */
+/* LAYOUT */
 .container {
-    padding: 40px;
+    max-width:1100px;
+    margin:auto;
+    padding:30px;
 }
 
+/* CARD */
 .card {
-    background: white;
-    padding: 25px;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    margin-bottom: 30px;
+    background: var(--card);
+    padding:20px;
+    border-radius:12px;
+    margin-bottom:20px;
 }
 
-/* TABLE */
-table {
-    width: 100%;
-    border-collapse: collapse;
-    table-layout: fixed;
-}
-
-thead th {
-    background: #3498db;
-    color: white;
-    padding: 12px;
-    text-align: left;
-}
-
-tbody td {
-    padding: 12px;
-    border-bottom: 1px solid #ddd;
-}
-
-/* oszlop fix */
-th:last-child, td:last-child {
-    width: 150px;
-    text-align: center;
+/* INPUT */
+input, select {
+    padding:10px;
+    border-radius:6px;
+    border:none;
+    background:#1f2937;
+    color:white;
 }
 
 /* BUTTON */
 button {
-    border: none;
-    padding: 6px 12px;
-    border-radius: 6px;
-    cursor: pointer;
+    padding:10px 15px;
+    border:none;
+    border-radius:6px;
+    background: var(--accent);
+    color:white;
+    cursor:pointer;
 }
 
-.danger {
-    background: #e74c3c;
-    color: white;
-}
+button:hover { opacity:0.9; }
 
-/* FORM */
-.form-row {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-top: 15px;
-}
+/* TABLE */
+table { width:100%; border-collapse: collapse; }
+td, th { padding:10px; }
+tr { border-bottom:1px solid #333; }
 
-input, select {
-    padding: 8px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-}
-
-/* SUCCESS */
-.success {
-    background: #d4edda;
-    color: #155724;
-    padding: 10px;
-    border-radius: 6px;
-    margin-bottom: 15px;
-}
-
-    .footer {
-    text-align: center;
-    padding: 10px;
-    font-size: 14px;
-    color: #888;
+/* FOOTER */
+.footer {
+    text-align:center;
+    padding:20px;
+    color:var(--muted);
 }
     
 </style>
