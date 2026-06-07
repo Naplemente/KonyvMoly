@@ -1,0 +1,67 @@
+[33m21a9b9c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Fix HTML encoding issues in user.html
+[33m8e384eb[m Format HTML login template for better readability
+[33ma8ce32f[m Fix HTML encoding issues in index.html
+[33me2ef84a[m Revamp admin panel layout and user interface
+[33mb2f859d[m Update adminok.html for book management interface
+[33mdc5c8dd[m Refactor main.js for initialization and code structure
+[33mefdf5aa[m Remove unused CSS variables for success and warning
+[33mbe9f720[m Refactor user.html for improved layout and responsiveness
+[33mbea9ec3[m Enhance login page for responsiveness and styling
+[33m2b41fff[m Update forgot.html
+[33mc47d60b[m Fix HTML formatting and button type in adminok.html
+[33m3cb0701[m Update index.html
+[33m3f0abd7[m Update user.html
+[33m4abb5c7[m Add class to body for authentication page
+[33m2ed9e36[m Add class to body for authentication page styling
+[33m3ddfcbe[m Update base.css
+[33ma73c775[m Update base.css
+[33m0370591[m Update base.css for modern UI and layout improvements
+[33m731e785[m Update index.html
+[33m9b59cb6[m Enhance admin layout styles for responsiveness
+[33m2f138b3[m Refactor CSS with variables and layout adjustments
+[33m98b7f6a[m Refactor HTML structure and improve layout
+[33m97edd44[m Refactor CSS variables and layout styles
+[33m4699a74[m Refactor CSS styles for improved layout and design
+[33m2b1cea6[m Update base.css
+[33m2373790[m Refactor adminok.html layout and styles
+[33mb9e3da9[m Refactor CSS for admin page styling and layout
+[33m801f0a0[m Update forgot.html
+[33m195085e[m Format HTML file for admin panel
+[33m562813e[m Update main.py
+[33ma051875[m Add files via upload
+[33mc5c2c8d[m Refactor user.html to use external CSS
+[33mc570f50[m Refactor login.html to use external CSS
+[33ma88a9d2[m Refactor index.html to use external CSS
+[33m531e313[m Refactor forgot password page to use external CSS
+[33m846930e[m Refactor adminok.html to use external stylesheet
+[33m80ddc55[m Refactor forgot password page layout and styles
+[33m51ac988[m Refactor login.html with new styles and classes
+[33m4d9f3f6[m Add base.css for styling layout and components
+[33m95e0ffd[m Revamp login.html with new styling and layout
+[33mad3050f[m Change copyright from KönyvMoly to Murkoff Corporation
+[33mea46851[m Redesign forgot password page with new styles
+[33m9d61c0c[m Update login.html
+[33mb72b877[m ket uj lap
+[33m9db68fb[m main.py rework 2
+[33m28b9cac[m main.py rework
+[33ma61dfc8[m Update main.py
+[33mb8a43fa[m az
+[33md39510c[m Update main.py
+[33mf339577[m indent return
+[33m3a86af0[m indent fix
+[33m8546dff[m indent fix
+[33mc262805[m fix indent
+[33mc12854c[m Add files via upload
+[33mde14dc3[m indent fix
+[33m3df5759[m Update print statement from 'Hello' to 'Goodbye'
+[33m72521c6[m Enhance login page with forgot password feature
+[33m3f4d3f5[m Enhance login.html with password recovery link
+[33mb65095f[m password reset endpoints
+[33mceab773[m Add footer with copyright information
+[33m3aabab3[m Add footer to login.html
+[33mb2ecc86[m Add footer to index.html
+[33m7837cd7[m Add footer to adminok.html
+[33mc85b358[m Teljes kész dokumentáció
+[33ma08fc4d[m if existing email
+[33mcb3b5eb[m most hátha
+[33m877c5e3[m javításra /t meg space
